@@ -1,0 +1,3 @@
+[submodule "internal/collect_amt"]
+	path = internal/collect_amt
+	url = git@github.com:ChenyunWu/CollectData_PhraseCut.git
