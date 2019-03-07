@@ -50,37 +50,37 @@ class VGLoader(object):
         with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
 
             count_info = json.load(f)
-            self.name_count = count_info['name']
-            self.att_count = count_info['att']
-            self.rel_count = count_info['rel']
+            name_count = count_info['name']
+            att_count = count_info['att']
+            rel_count = count_info['rel']
 
-        name_count_sorted = self.name_count.values()
+        name_count_sorted = name_count.values()
         name_count_sorted.sort()
         self.name_count_thresh = name_count_sorted[-name_count_top]
         self.name_num = len(name_count_sorted) - name_count_sorted.index(self.name_count_thresh)
         print('Number of categories: %d / %d, frequency thresh: %d'
-              % (self.name_num, len(self.name_count), self.name_count_thresh))
-        self.name_to_cnt = {k:v for k, v in self.name_count.items() if v >= self.name_count_thresh}
+              % (self.name_num, len(name_count), self.name_count_thresh))
+        self.name_to_cnt = {k: v for k, v in name_count.items() if v >= self.name_count_thresh}
         self.ix_to_name = self.name_to_cnt.keys()
         self.name_to_ix = {name: ix for ix, name in enumerate(self.ix_to_name)}
 
         # prepare attributes
-        att_count_sorted = self.att_count.values()
+        att_count_sorted = att_count.values()
         att_count_sorted.sort()
         self.att_count_thresh = att_count_sorted[-att_count_top]
         self.att_num = len(att_count_sorted) - att_count_sorted.index(self.att_count_thresh)
         print('Number of valid unique attributes: %d / %d, frequency thresh: %d'
-              % (self.att_num, len(self.att_count), self.att_count_thresh))
-        self.att_to_cnt = {k:v for k, v in self.att_count.items() if v >= self.att_count_thresh}
+              % (self.att_num, len(att_count), self.att_count_thresh))
+        self.att_to_cnt = {k: v for k, v in att_count.items() if v >= self.att_count_thresh}
         self.ix_to_att = self.att_to_cnt.keys()
         self.att_to_ix = {att: ix for ix, att in enumerate(self.ix_to_att)}
 
-        rel_count_sorted = self.rel_count.values()
+        rel_count_sorted = rel_count.values()
         rel_count_sorted.sort()
         self.rel_count_thresh = rel_count_sorted[-rel_count_top]
         self.rel_num = len(rel_count_sorted) - rel_count_sorted.index(self.rel_count_thresh)
         print('Number of valid unique relation predicates: %d / %d, frequency thresh: %d'
-              % (self.rel_num, len(self.rel_count), self.rel_count_thresh))
+              % (self.rel_num, len(rel_count), self.rel_count_thresh))
 
         print('split: %s' % split)
         if not split:
@@ -295,7 +295,8 @@ class VGLoader(object):
 
             valid_name = False
             for name in obj['names']:
-                if self.name_count.get(name, 0) >= self.name_count_thresh:
+                # if self.name_count.get(name, 0) >= self.name_count_thresh:
+                if name in self.ix_to_name:
                     valid_name = True
                     break
             if not valid_name:

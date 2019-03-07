@@ -16,9 +16,6 @@ sys.path.append(os.path.abspath(dataset_path))
 from utils.iou import *
 from utils.subset import *
 from utils.eval_utils import *
-from _comprehend.eval.mattnet_ins_predictor import mattnet_ins_predictor
-from _comprehend.eval.mattnet_det_predictor import mattnet_det_predictor
-from _comprehend.eval.det_baseline_predictor import det_upperbound, det_rand
 
 
 def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
@@ -61,7 +58,7 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
             task_count += 1
             pred = predictions[img_id][task_id]
             correct = pred.get('correct', 0)
-            pred_boxes = pred.get('pred_boxes', [0, 0, 1, 1])
+            pred_boxes = pred.get('pred_boxes', [[0, 0, 1, 1]])
             pred_mask_bin = pred.get('pred_mask', None)
             if pred_mask_bin is None:
                 pred_mask = np.zeros((img_data['height'], img_data['width']))
@@ -240,20 +237,27 @@ if __name__ == '__main__':
         elif args.pred_name == 'ins_rand':
             predictions = ins_rand_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
         elif args.pred_name == 'ins_mattnet_pred':
+            from _comprehend.eval.mattnet_ins_predictor import mattnet_ins_predictor
             predictions = mattnet_ins_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
 
         elif args.pred_name.startswith('det_rand'):
+            from _comprehend.eval.det_baseline_predictor import det_rand
             predictions = det_rand(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                    score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                    sort_label=args.det_sort_label)
         elif args.pred_name.startswith('det_upperbound'):
+            from _comprehend.eval.det_baseline_predictor import det_upperbound
             predictions = det_upperbound(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                          score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                          sort_label=args.det_sort_label)
         elif args.pred_name.startswith('det_mattnet_pred'):
+            from _comprehend.eval.mattnet_det_predictor import mattnet_det_predictor
             predictions = mattnet_det_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                                 score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                                 sort_label=args.det_sort_label)
+        elif args.pred_name.startswith('rmi_pred'):
+            from _rmi.rmi_refvg_predictor import rmi_refvg_predictor
+            predictions = rmi_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
         else:
             raise NotImplementedError
     else:

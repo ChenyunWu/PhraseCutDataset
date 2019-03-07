@@ -14,7 +14,7 @@ from matplotlib.patches import Rectangle
 from PIL import Image as PIL_Image
 
 from _dataset.utils.vg_loader import VGLoader
-from _comprehend.tools.mattnet_opt import parse_opt
+from _comprehend.tool.mattnet_opt import parse_opt
 from _dataset.utils.iou import iou_box
 
 

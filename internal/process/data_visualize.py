@@ -69,7 +69,6 @@ def ref_visualize(split='val', img_count=10):
         ins_boxes = r['instance_boxes']
         ins_polygons = r['Polygons']
 
-
         visualize_refvg(ax=axes.flatten()[vi], title=title, img_id=r['image_id'], gt_Polygons=ins_polygons,
                         gt_boxes=ins_boxes, vg_boxes=vg_boxes)  # , set_colors={'gt_polygons': 'colorful'})
         vi += 1

@@ -149,6 +149,7 @@ class RefVGLoader:
         data['image_id'] = img_id
         data['width'] = vg_img['width']
         data['height'] = vg_img['height']
+        data['split'] = vg_img['split']
 
         data['task_ids'] = task_ids
         data['phrases'] = phrases
