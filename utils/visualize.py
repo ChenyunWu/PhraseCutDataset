@@ -47,12 +47,6 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
 
     colors = modify_color(set_colors)
 
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    # ax.axis('off')
-    if title:
-        ax.set_title(title, color=colors['title'])
-
     if img_id < 0 and not img_url:
         return
 
@@ -120,4 +114,11 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
         ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.6)
 
+    # ax.set_frame_on(False)
+    # ax.set_yticklabels([])
+    # ax.set_xticklabels([])
+    ax.set_axis_off()
+
+    if title:
+        ax.set_title(title, color=colors['title'])
     return
