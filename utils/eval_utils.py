@@ -34,7 +34,7 @@ def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/
     """vg boxes used to generate the phrase as the predicted mask"""
     loader = RefVGLoader(split=split)
     predictions = dict()
-    for img_i, img_id in enumerate(loader.ref_img_ids):
+    for img_i, img_id in enumerate(loader.img_ids):
         print('vg_predictor: img %d / %d' % (img_i, eval_img_count))
         img_data = loader.get_img_ref_data(img_id)
         predictions[img_id] = dict()
@@ -63,7 +63,7 @@ def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refv
     """randomly pick one vg box as the predicted mask"""
     loader = RefVGLoader(split=split)
     predictions = dict()
-    for img_i, img_id in enumerate(loader.ref_img_ids):
+    for img_i, img_id in enumerate(loader.img_ids):
         print('rand_vg_predictor: img %d / %d' % (img_i, eval_img_count))
         img_data = loader.get_img_ref_data(img_id)
         predictions[img_id] = dict()
@@ -92,7 +92,7 @@ def ins_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_ref
     """randomly pick one vg box as the predicted mask"""
     loader = RefVGLoader(split=split)
     predictions = dict()
-    for img_i, img_id in enumerate(loader.ref_img_ids):
+    for img_i, img_id in enumerate(loader.img_ids):
         print('ins_rand_predictor: img %d / %d' % (img_i, eval_img_count))
         img_data = loader.get_img_ref_data(img_id)
         predictions[img_id] = dict()

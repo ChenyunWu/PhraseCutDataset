@@ -19,13 +19,13 @@ from utils.eval_utils import *
 
 
 def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
-             eval_img_count=-1, visualize_img_count=0):
+             eval_img_count=-1, visualize_img_count=0, out_path='output/eval_refvg/temp'):
 
     # initialize
     loader = RefVGLoader(split=split)
     loader.shuffle()
     if eval_img_count < 0:
-        eval_img_count = len(loader.ref_img_ids)
+        eval_img_count = len(loader.img_ids)
 
     # stats for each subset: correct_count, iou_pred_box, iou_pred_mask
     stats = {'all': [0, [], []]}
@@ -33,7 +33,6 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
         for k in subsets:
             stats[k] = [0, [], []]
 
-    out_path = 'output/eval_refvg/%s' % pred_name
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     plots = {}
@@ -133,17 +132,18 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
                 print('%s visualization %d.' % (k, v_count))
         pdf.close()
     print('Start to analyze %s:' % pred_name)
-    results = analyze_subset_stats(stats, out_path, pred_name, eval_img_count)
+    results = analyze_subset_stats(stats, out_path, eval_img_count)
     return results, stats
 
 
-def analyze_subset_stats(stats, out_path, pred_name, img_num):
+def analyze_subset_stats(stats, out_path, img_num):
     subset_results = {}
     result_f = open(os.path.join(out_path, 'results_%d.txt' % img_num), 'w')
     summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
     summary_box = open('output/eval_refvg/summary_box.csv', 'a')
     summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
-    subset_summary_str = '%s,%d' % (pred_name, img_num)
+    exp_str = out_path.split('/')[-1]
+    subset_summary_str = exp_str
 
     for k, v in sorted(stats.items()):
         count = len(v[1])
@@ -164,7 +164,7 @@ def analyze_subset_stats(stats, out_path, pred_name, img_num):
 
         pred_box_acc = {}
         pred_box_acc_str = 'pred_box_acc: '
-        box_sum_str = '%s,%d,%.3f' % (pred_name, img_num, mean_pred_box)
+        box_sum_str = '%s,%.3f' % (exp_str, mean_pred_box)
         for thresh in box_threshs:
             pred_box_acc[thresh] = np.sum(np.array(v[1]) > thresh) * 1.0 / count
             pred_box_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_box_acc[thresh])
@@ -176,7 +176,7 @@ def analyze_subset_stats(stats, out_path, pred_name, img_num):
 
         pred_mask_acc = {}
         pred_mask_acc_str = 'pred_mask_acc: '
-        mask_sum_str = '%s,%d,%.3f' % (pred_name, img_num, mean_pred_mask)
+        mask_sum_str = '%s,%.3f' % (exp_str, mean_pred_mask)
         for thresh in mask_threshs:
             pred_mask_acc[thresh] = np.sum(np.array(v[2]) > thresh) * 1.0 / count
             pred_mask_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_mask_acc[thresh])
@@ -202,13 +202,13 @@ def analyze_subset_stats(stats, out_path, pred_name, img_num):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--pred_name', type=str, help='name of the predictor to be evaluated: vg_pred, rand_vg_pred',
-                        default='vg_gt')
+                        default='ensemble_pred')
     parser.add_argument('--pred_path', type=str, help='path to the prediction results. If None, run the predictor.',
-                        default=None)  #'output/eval_refvg/vg_pred/val_50.npy')
+                        default='')  # output/eval_refvg/ensemble_pred_topk1.000000_miniv0/miniv_17.npy
     parser.add_argument('--split', type=str, help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc',
-                        default='val')
-    parser.add_argument('--eval_img_count', type=int, help='number of images to evaluate. -1 means the whole split',
-                        default=500)
+                        default='miniv')
+    parser.add_argument('--eval_img_count', type=int, help='number of images to evaluate. <=0 means the whole split',
+                        default=0)
     parser.add_argument('--visualize_img_count', type=int, help='number of images to visualize per subset',
                         default=12)
     parser.add_argument('--subset', type=int, default=1, help='whether to enable subset analysis')
@@ -220,14 +220,22 @@ if __name__ == '__main__':
     parser.add_argument('--det_sort_label', type=str, default='gt', help='how to rank the candidates. '
                          '"gt": logits of the phrase name category; "det": scores of the detected category')
 
+    # parameters for ensemble pred: thresh_by='topk'/'hard'/'soft', thresh
+    parser.add_argument('--ensemble_thresh_by', type=str, default='topk', help='how to thresh scores: topk/hard/soft')
+    parser.add_argument('--ensemble_thresh', type=float, default=1, help='threshold for ensemble scores')
+
     args = parser.parse_args()
 
     # make other options
+    eval_path = 'output/eval_refvg/' + args.pred_name
+    if args.pred_name.startswith('det'):
+        eval_path += '_%.1f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
+    if args.pred_name.startswith('ensemble'):
+        eval_path += '_%s%.2f' % (args.ensemble_thresh_by, args.ensemble_thresh)
+    eval_path += '_%s%d' % (args.split, args.eval_img_count)
     out_path = None
     if args.save_pred:
-        out_path = 'output/eval_refvg/' + args.pred_name
-        if args.pred_name.startswith('det'):
-            out_path += '_%.1f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
+        out_path = eval_path
     if not args.pred_path or not os.path.exists(args.pred_path):
         if args.pred_name == 'vg_gt':
                 predictions = vg_gt_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
@@ -258,11 +266,16 @@ if __name__ == '__main__':
         elif args.pred_name.startswith('rmi_pred'):
             from _rmi.rmi_refvg_predictor import rmi_refvg_predictor
             predictions = rmi_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+
+        elif args.pred_name.startswith('ensemble_pred'):
+            from _ensemble.utils.ensemble_predictor import ensemble_predictor
+            predictions = ensemble_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+
         else:
             raise NotImplementedError
     else:
         predictions = np.load(args.pred_path).item()
     evaluate(predictions=predictions, pred_name=args.pred_name, split=args.split, subset=args.subset,
-             eval_img_count=args.eval_img_count, visualize_img_count=args.visualize_img_count)
+             eval_img_count=args.eval_img_count, visualize_img_count=args.visualize_img_count, out_path=eval_path)
 
 

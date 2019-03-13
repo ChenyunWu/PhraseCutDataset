@@ -32,7 +32,7 @@ class RefVGLoader:
         self.ImgInsBoxes = {}
         self.ImgInsPolygons = {}
         self.ImgReferTasks = {}
-        self.ref_img_ids = []
+        loaded_img_ids = []
         for task in self.ref_tasks:
             if not allow_no_structure and not task['phrase_structure']:
                 continue
@@ -50,19 +50,19 @@ class RefVGLoader:
                 self.ImgReferTasks[img_id] = [task]
                 self.ImgInsBoxes[img_id] = task['instance_boxes'][:]
                 self.ImgInsPolygons[img_id] = task['Polygons'][:]
-                self.ref_img_ids.append(img_id)
+                loaded_img_ids.append(img_id)
                 task['ins_box_ixs'] = range(len(task['instance_boxes']))
 
         if not split:
             split = 'train_val_test_miniv'
         self.img_ids = [img_id for img_id, img in self.vg_loader.Images.items()
-                        if img['split'] in split and img_id in self.ref_img_ids]
+                        if img['split'] in split and img_id in loaded_img_ids]
         self.img_ids.sort()
         self.iterator = 0
         print('RefVGLoader ready.')
 
     def shuffle(self):
-        random.shuffle(self.ref_img_ids)
+        random.shuffle(self.img_ids)
 
     def get_rel_descriptions(self, phrase, p_struct):
         predicates = [rel['predicate'] for rel in p_struct['relations']]
@@ -97,7 +97,7 @@ class RefVGLoader:
         """
         # Fetch feats according to the image_split_ix
         wrapped = False
-        max_index = len(self.ref_img_ids) - 1
+        max_index = len(self.img_ids) - 1
 
         if img_id < 0:
             ri = self.iterator
@@ -106,7 +106,7 @@ class RefVGLoader:
                 ri_next = 0
                 wrapped = True
             self.iterator = ri_next
-            img_id = self.ref_img_ids[ri]
+            img_id = self.img_ids[ri]
 
         vg_img = self.vg_loader.Images[img_id]
         vg_ann_id_set = set()

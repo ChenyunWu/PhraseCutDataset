@@ -73,7 +73,7 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
                                    linewidth=0.3, linestyle=':', alpha=0.5))
 
     color = colors['gt_polygons']
-    if gt_Polygons:
+    if gt_Polygons is not None:
         for ins_i, ins_ps in enumerate(gt_Polygons):
             if color == 'colorful':
                 c = 'C%d' % (ins_i % 10)
@@ -84,7 +84,7 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
             ax.imshow(masked, 'Greens_r', interpolation='none', alpha=0.6)
             for p in ins_ps:
                 ax.add_patch(Polygon(p, fill=True, alpha=0.5, color=c))
-    elif gt_polygons:
+    elif gt_polygons is not None:
         for pi, polygon in enumerate(gt_polygons):
             if color == 'colorful':
                 c = 'C%d' % (pi % 10)
@@ -92,11 +92,11 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
                 c = color
             ax.add_patch(Polygon(polygon, fill=True, alpha=0.5, color=c))
 
-    if vg_boxes:
+    if vg_boxes is not None:
         for box in vg_boxes:
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['vg_boxes'],
                                    linewidth=0.9, linestyle='-', alpha=0.8))
-    if gt_boxes:
+    if gt_boxes is not None:
         for box in gt_boxes:
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['gt_boxes'],
                                    linewidth=0.9, linestyle='-', alpha=0.8))
@@ -106,7 +106,7 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['can_boxes'],
                                    linewidth=0.6, linestyle=':', alpha=0.8))
 
-    if pred_boxes:
+    if pred_boxes is not None:
         for box in pred_boxes:
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['pred_boxes'],
                                    linewidth=0.6, linestyle='-', alpha=0.9))
