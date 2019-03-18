@@ -18,12 +18,13 @@ from utils.subset import *
 from utils.eval_utils import *
 
 
-def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
-             eval_img_count=-1, visualize_img_count=0, out_path='output/eval_refvg/temp'):
+def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=-1,
+             visualize_img_count=0, out_path='output/eval_refvg/temp', verbose=True):
 
     # initialize
-    loader = RefVGLoader(split=split)
-    loader.shuffle()
+    if loader is None:
+        loader = RefVGLoader(split=split)
+        loader.shuffle()
     if eval_img_count < 0:
         eval_img_count = len(loader.img_ids)
 
@@ -32,9 +33,9 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
     if subset:
         for k in subsets:
             stats[k] = [0, [], []]
-
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
+    if out_path is not None:
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
     plots = {}
     to_plot = 0
     pdf = None
@@ -113,9 +114,10 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
                                     pdf.close()
 
         # print
-        print('image[%d/%d] %d phrases. Up till now: box_acc %.3f, mean_iou_box %.3f, mean_iou_mask %.3f' %
-              (img_i, eval_img_count, len(img_data['task_ids']), stats['all'][0] * 1.0 / task_count,
-               np.mean(stats['all'][1]), np.mean(stats['all'][2])))
+        if verbose:
+            print('image[%d/%d] %d phrases. Up till now: box_acc %.3f, mean_iou_box %.3f, mean_iou_mask %.3f' %
+                  (img_i, eval_img_count, len(img_data['task_ids']), stats['all'][0] * 1.0 / task_count,
+                   np.mean(stats['all'][1]), np.mean(stats['all'][2])))
 
         # if we've done enough images
         if img_i + 1 == eval_img_count:
@@ -138,12 +140,21 @@ def evaluate(predictions, pred_name='rand_vg', split='val', subset=True,
 
 def analyze_subset_stats(stats, out_path, img_num):
     subset_results = {}
-    result_f = open(os.path.join(out_path, 'results_%d.txt' % img_num), 'w')
-    summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
-    summary_box = open('output/eval_refvg/summary_box.csv', 'a')
-    summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
-    exp_str = out_path.split('/')[-1]
-    subset_summary_str = exp_str
+    result_f = None
+    summary_mask = None
+    summary_box = None
+    summary_subset = None
+    exp_str = ''
+    subset_summary_str = ''
+    if out_path is not None:
+        # out_path = 'temp'
+        result_f = open(os.path.join(out_path, 'results_%d.txt' % img_num), 'w')
+        summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
+        summary_box = open('output/eval_refvg/summary_box.csv', 'a')
+        summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
+
+        exp_str = out_path.split('/')[-1]
+        subset_summary_str = exp_str
 
     for k, v in sorted(stats.items()):
         count = len(v[1])
@@ -156,8 +167,9 @@ def analyze_subset_stats(stats, out_path, img_num):
         str = '\n%s: count=%d, box_acc=%.3f, mean_iou: pred_box=%.3f, pred_mask=%.3f' \
               % (k, count, box_acc, mean_pred_box, mean_pred_mask)
         print(str)
-        result_f.write(str + '\n')
-        subset_summary_str += ',%.3f' % mean_pred_mask
+        if out_path is not None:
+            result_f.write(str + '\n')
+            subset_summary_str += ',%.3f' % mean_pred_mask
 
         box_threshs = [0.1, 0.3, 0.5, 0.7, 0.9]
         mask_threshs = [0.1, 0.3, 0.5, 0.7, 0.9]
@@ -170,9 +182,10 @@ def analyze_subset_stats(stats, out_path, img_num):
             pred_box_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_box_acc[thresh])
             box_sum_str += ',%.3f' % pred_box_acc[thresh]
         print(pred_box_acc_str)
-        result_f.write(pred_box_acc_str + '\n')
-        if k == 'all':
-            summary_box.write(box_sum_str + '\n')
+        if out_path is not None:
+            result_f.write(pred_box_acc_str + '\n')
+            if k == 'all':
+                summary_box.write(box_sum_str + '\n')
 
         pred_mask_acc = {}
         pred_mask_acc_str = 'pred_mask_acc: '
@@ -182,20 +195,21 @@ def analyze_subset_stats(stats, out_path, img_num):
             pred_mask_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_mask_acc[thresh])
             mask_sum_str += ',%.3f' % pred_mask_acc[thresh]
         print(pred_mask_acc_str)
-        result_f.write(pred_mask_acc_str)
-        if k == 'all':
-            summary_mask.write(mask_sum_str + '\n')
+        if out_path is not None:
+            result_f.write(pred_mask_acc_str)
+            if k == 'all':
+                summary_mask.write(mask_sum_str + '\n')
 
         result = {'pred_box_acc': pred_box_acc, 'mean_pred_box': mean_pred_box,
                   'pred_mask_acc': pred_mask_acc, 'mean_pred_mask': mean_pred_mask,
                   'box_acc': box_acc}
         subset_results[k] = result
-
-    result_f.close()
-    summary_mask.close()
-    summary_box.close()
-    summary_subset.write(subset_summary_str + '\n')
-    summary_subset.close()
+    if out_path is not None:
+        result_f.close()
+        summary_mask.close()
+        summary_box.close()
+        summary_subset.write(subset_summary_str + '\n')
+        summary_subset.close()
     return subset_results
 
 
@@ -218,11 +232,11 @@ if __name__ == '__main__':
     parser.add_argument('--det_score_thresh', type=float, default=0.1, help='score threshold for detected candidates')
     parser.add_argument('--det_max_can', type=int, default=10, help='max number of detected candidates')
     parser.add_argument('--det_sort_label', type=str, default='gt', help='how to rank the candidates. '
-                         '"gt": logits of the phrase name category; "det": scores of the detected category')
+                                     '"gt": logits of the phrase name category; "det": scores of the detected category')
 
     # parameters for ensemble pred: thresh_by='topk'/'hard'/'soft', thresh
-    parser.add_argument('--ensemble_thresh_by', type=str, default='topk', help='how to thresh scores: topk/hard/soft')
-    parser.add_argument('--ensemble_thresh', type=float, default=1, help='threshold for ensemble scores')
+    parser.add_argument('--ensemble_thresh_by', type=str, default='soft', help='how to thresh scores: topk/hard/soft')
+    parser.add_argument('--ensemble_thresh', type=float, default=0.9, help='threshold for ensemble scores')
 
     args = parser.parse_args()
 
@@ -245,21 +259,21 @@ if __name__ == '__main__':
         elif args.pred_name == 'ins_rand':
             predictions = ins_rand_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
         elif args.pred_name == 'ins_mattnet_pred':
-            from _comprehend.eval.mattnet_ins_predictor import mattnet_ins_predictor
+            from _comprehend.predictors.mattnet_ins_predictor import mattnet_ins_predictor
             predictions = mattnet_ins_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
 
         elif args.pred_name.startswith('det_rand'):
-            from _comprehend.eval.det_baseline_predictor import det_rand
+            from _comprehend.predictors.det_baseline_predictor import det_rand
             predictions = det_rand(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                    score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                    sort_label=args.det_sort_label)
         elif args.pred_name.startswith('det_upperbound'):
-            from _comprehend.eval.det_baseline_predictor import det_upperbound
+            from _comprehend.predictors.det_baseline_predictor import det_upperbound
             predictions = det_upperbound(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                          score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                          sort_label=args.det_sort_label)
         elif args.pred_name.startswith('det_mattnet_pred'):
-            from _comprehend.eval.mattnet_det_predictor import mattnet_det_predictor
+            from _comprehend.predictors.mattnet_det_predictor import mattnet_det_predictor
             predictions = mattnet_det_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
                                                 score_thresh=args.det_score_thresh, max_can=args.det_max_can,
                                                 sort_label=args.det_sort_label)
@@ -269,12 +283,20 @@ if __name__ == '__main__':
 
         elif args.pred_name.startswith('ensemble_pred'):
             from _ensemble.utils.ensemble_predictor import ensemble_predictor
-            predictions = ensemble_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+            if args.pred_name.endswith('logit'):
+                model_path = 'output/ensemble/try/IN_obj_cat_att_match_logit_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0'
+            else:
+                model_path = 'output/ensemble/try/' \
+                             'IN_obj_cat_att_match_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0'
+            predictions = ensemble_predictor(split=args.split, thresh_by=args.ensemble_thresh_by,
+                                             thresh=args.ensemble_thresh, eval_img_count=args.eval_img_count,
+                                             out_path=out_path, model_path=model_path)
 
         else:
             raise NotImplementedError
     else:
         predictions = np.load(args.pred_path).item()
+
     evaluate(predictions=predictions, pred_name=args.pred_name, split=args.split, subset=args.subset,
              eval_img_count=args.eval_img_count, visualize_img_count=args.visualize_img_count, out_path=eval_path)
 

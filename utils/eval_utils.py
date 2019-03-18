@@ -7,7 +7,7 @@ import sys
 import random
 
 current_path = os.path.realpath(__file__)
-dataset_path = os.path.join(current_path, '..')
+dataset_path = os.path.join(current_path, '../..')
 sys.path.append(os.path.abspath(dataset_path))
 
 from utils.visualize import visualize_refvg
