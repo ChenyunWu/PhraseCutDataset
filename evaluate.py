@@ -237,6 +237,7 @@ if __name__ == '__main__':
     # parameters for ensemble pred: thresh_by='topk'/'hard'/'soft', thresh
     parser.add_argument('--ensemble_thresh_by', type=str, default='soft', help='how to thresh scores: topk/hard/soft')
     parser.add_argument('--ensemble_thresh', type=float, default=0.9, help='threshold for ensemble scores')
+    parser.add_argument('--ensemble_input', type=str, default='obj_cat_att_att_freq_box_size', help='ensemble input')
 
     args = parser.parse_args()
 
@@ -245,7 +246,7 @@ if __name__ == '__main__':
     if args.pred_name.startswith('det'):
         eval_path += '_%.1f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
     if args.pred_name.startswith('ensemble'):
-        eval_path += '_%s%.2f' % (args.ensemble_thresh_by, args.ensemble_thresh)
+        eval_path += '_%s_%s%.2f' % (args.ensemble_input, args.ensemble_thresh_by, args.ensemble_thresh)
     eval_path += '_%s%d' % (args.split, args.eval_img_count)
     out_path = None
     if args.save_pred:
@@ -284,13 +285,14 @@ if __name__ == '__main__':
         elif args.pred_name.startswith('ensemble_pred'):
             from _ensemble.utils.ensemble_predictor import ensemble_predictor
             if args.pred_name.endswith('logit'):
-                model_path = 'output/ensemble/try/IN_obj_cat_att_match_logit_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0'
+                model_path = 'output/ensemble/try/IN_%s_logit_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' \
+                             % args.ensemble_input
             else:
-                model_path = 'output/ensemble/try/' \
-                             'IN_obj_cat_att_match_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0'
+                model_path = 'output/ensemble/final/' \
+                             'IN_%s_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' % args.ensemble_input
             predictions = ensemble_predictor(split=args.split, thresh_by=args.ensemble_thresh_by,
                                              thresh=args.ensemble_thresh, eval_img_count=args.eval_img_count,
-                                             out_path=out_path, model_path=model_path)
+                                             out_path=out_path, model_path=model_path, checkpoint='epoch0_step1000.pth')
 
         else:
             raise NotImplementedError

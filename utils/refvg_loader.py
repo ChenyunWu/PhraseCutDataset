@@ -10,11 +10,11 @@ from .vg_loader import VGLoader as VGLoader
 
 class RefVGLoader:
 
-    def __init__(self, split=None, vg_loader=None, obj_filter=False, allow_no_structure=False):
+    def __init__(self, split=None, vg_loader=None, obj_filter=False, allow_no_structure=False, word_embed=None):
         # parent loader instance
         self.vg_loader = vg_loader
         if not vg_loader:
-            self.vg_loader = VGLoader(split=split, obj_filter=obj_filter)
+            self.vg_loader = VGLoader(split=split, obj_filter=obj_filter, word_embed=word_embed)
 
         if not split:
             print('RefVGLoader loading refer_filtered_instance.json')
