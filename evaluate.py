@@ -18,7 +18,7 @@ from utils.subset import *
 from utils.eval_utils import *
 
 
-def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=-1,
+def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=0,
              visualize_img_count=0, out_path='output/eval_refvg/temp', verbose=True):
 
     # initialize
@@ -28,11 +28,11 @@ def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=
     if eval_img_count < 0:
         eval_img_count = len(loader.img_ids)
 
-    # stats for each subset: correct_count, iou_pred_box, iou_pred_mask
-    stats = {'all': [0, [], []]}
+    # stats for each subset: correct_count, iou_pred_box, iou_pred_mask, i_pred_mask, u_pred_mask
+    stats = {'all': [0, [], [], [], []]}
     if subset:
         for k in subsets:
-            stats[k] = [0, [], []]
+            stats[k] = [0, [], [], [], []]
     if out_path is not None:
         if not os.path.exists(out_path):
             os.makedirs(out_path)
@@ -40,7 +40,7 @@ def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=
     to_plot = 0
     pdf = None
     if visualize_img_count > 0:
-        pdf = PdfPages(os.path.join(out_path, 'visualizations_%s.pdf' % pred_name))
+        pdf = PdfPages(os.path.join(out_path, 'vis_%s_%s%d.pdf' % (pred_name, split, eval_img_count)))
         to_plot = len(stats.keys())
         for k in stats.keys():
             fig, axes = plt.subplots(int((visualize_img_count + 2) / 3), 3, figsize=(8.5, 1.1 * visualize_img_count))
@@ -77,20 +77,23 @@ def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=
             # compute stats
             correct_count += correct
             iou_pred_box = iou_boxes(pred_boxes, gt_boxes)
-            iou_pred_mask = iou_polygons_masks(gt_polygons, [pred_mask])
+            iou_pred_mask, i_pred_mask, u_pred_mask, gt_relative_size = iou_polygons_masks(gt_polygons, [pred_mask],
+                                                                                           iandu=True, gt_size=True)
 
             # log subset stats, make visualizations
             phrase = img_data['phrases'][task_i]
             phrase_structure = img_data['p_structures'][task_i]
             cond = {'all': True}
             if subset:
-                cond = get_subset(phrase, phrase_structure, gt_boxes)
+                cond = get_subset(phrase, phrase_structure, gt_boxes, gt_relative_size)
             visualized = False
             for k, v in cond.items():
                 if v:
                     stats[k][0] += correct
                     stats[k][1].append(float(iou_pred_box))
                     stats[k][2].append(float(iou_pred_mask))
+                    stats[k][3].append(float(i_pred_mask))
+                    stats[k][4].append(float(u_pred_mask))
 
                     # visualize
                     if not visualized and visualize_img_count > 0:
@@ -134,11 +137,11 @@ def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=
                 print('%s visualization %d.' % (k, v_count))
         pdf.close()
     print('Start to analyze %s:' % pred_name)
-    results = analyze_subset_stats(stats, out_path, eval_img_count)
+    results = analyze_subset_stats(stats, out_path, split, eval_img_count)
     return results, stats
 
 
-def analyze_subset_stats(stats, out_path, img_num):
+def analyze_subset_stats(stats, out_path, split, img_num):
     subset_results = {}
     result_f = None
     summary_mask = None
@@ -148,39 +151,40 @@ def analyze_subset_stats(stats, out_path, img_num):
     subset_summary_str = ''
     if out_path is not None:
         # out_path = 'temp'
-        result_f = open(os.path.join(out_path, 'results_%d.txt' % img_num), 'w')
+        result_f = open(os.path.join(out_path, 'results_%s%d.txt' % (split, img_num)), 'w')
         summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
         summary_box = open('output/eval_refvg/summary_box.csv', 'a')
         summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
 
         exp_str = out_path.split('/')[-1]
         subset_summary_str = exp_str
-
+    sample_num = len(stats['all'][1])
     for k, v in sorted(stats.items()):
         count = len(v[1])
         if count == 0:
             print('\n%s: count = 0')
             continue
         box_acc = v[0] * 1.0 / count
-        mean_pred_box = np.mean(v[1])
-        mean_pred_mask = np.mean(v[2])
-        str = '\n%s: count=%d, box_acc=%.3f, mean_iou: pred_box=%.3f, pred_mask=%.3f' \
-              % (k, count, box_acc, mean_pred_box, mean_pred_mask)
+        mean_box_iou = np.mean(v[1])
+        mean_mask_iou = np.mean(v[2])
+        cum_mask_iou = np.sum(v[3]) * 1.0 / np.sum(v[4])
+        str = '\n%s: count=%d(%.4f), box_acc=%.4f, mean_box_iou=%.4f, mean_mask_iou=%.4f, cum_mask_iou=%.4f' \
+              % (k, count, count*1.0 / sample_num, box_acc, mean_box_iou, mean_mask_iou, cum_mask_iou)
         print(str)
         if out_path is not None:
             result_f.write(str + '\n')
-            subset_summary_str += ',%.3f' % mean_pred_mask
+            subset_summary_str += ',%.4f' % mean_mask_iou
 
-        box_threshs = [0.1, 0.3, 0.5, 0.7, 0.9]
-        mask_threshs = [0.1, 0.3, 0.5, 0.7, 0.9]
+        box_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
+        mask_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
 
         pred_box_acc = {}
         pred_box_acc_str = 'pred_box_acc: '
-        box_sum_str = '%s,%.3f' % (exp_str, mean_pred_box)
+        box_sum_str = '%s,%.4f' % (exp_str, mean_box_iou)
         for thresh in box_threshs:
             pred_box_acc[thresh] = np.sum(np.array(v[1]) > thresh) * 1.0 / count
-            pred_box_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_box_acc[thresh])
-            box_sum_str += ',%.3f' % pred_box_acc[thresh]
+            pred_box_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_box_acc[thresh])
+            box_sum_str += ',%.4f' % pred_box_acc[thresh]
         print(pred_box_acc_str)
         if out_path is not None:
             result_f.write(pred_box_acc_str + '\n')
@@ -189,19 +193,19 @@ def analyze_subset_stats(stats, out_path, img_num):
 
         pred_mask_acc = {}
         pred_mask_acc_str = 'pred_mask_acc: '
-        mask_sum_str = '%s,%.3f' % (exp_str, mean_pred_mask)
+        mask_sum_str = '%s,%.4f,%.4f' % (exp_str, mean_mask_iou, cum_mask_iou)
         for thresh in mask_threshs:
             pred_mask_acc[thresh] = np.sum(np.array(v[2]) > thresh) * 1.0 / count
-            pred_mask_acc_str += 'acc%.1f = %.3f  ' % (thresh, pred_mask_acc[thresh])
-            mask_sum_str += ',%.3f' % pred_mask_acc[thresh]
+            pred_mask_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_mask_acc[thresh])
+            mask_sum_str += ',%.4f' % pred_mask_acc[thresh]
         print(pred_mask_acc_str)
         if out_path is not None:
             result_f.write(pred_mask_acc_str)
             if k == 'all':
                 summary_mask.write(mask_sum_str + '\n')
 
-        result = {'pred_box_acc': pred_box_acc, 'mean_pred_box': mean_pred_box,
-                  'pred_mask_acc': pred_mask_acc, 'mean_pred_mask': mean_pred_mask,
+        result = {'pred_box_acc': pred_box_acc, 'mean_box_iou': mean_box_iou,
+                  'pred_mask_acc': pred_mask_acc, 'mean_mask_iou': mean_mask_iou, 'cum_mask_iou': cum_mask_iou,
                   'box_acc': box_acc}
         subset_results[k] = result
     if out_path is not None:
@@ -224,7 +228,7 @@ if __name__ == '__main__':
     parser.add_argument('--eval_img_count', type=int, help='number of images to evaluate. <=0 means the whole split',
                         default=0)
     parser.add_argument('--visualize_img_count', type=int, help='number of images to visualize per subset',
-                        default=12)
+                        default=0)
     parser.add_argument('--subset', type=int, default=1, help='whether to enable subset analysis')
     parser.add_argument('--save_pred', type=int, default=1, help='whether to save predictions to file.')
 
@@ -235,18 +239,22 @@ if __name__ == '__main__':
                                      '"gt": logits of the phrase name category; "det": scores of the detected category')
 
     # parameters for ensemble pred: thresh_by='topk'/'hard'/'soft', thresh
-    parser.add_argument('--ensemble_thresh_by', type=str, default='soft', help='how to thresh scores: topk/hard/soft')
-    parser.add_argument('--ensemble_thresh', type=float, default=0.9, help='threshold for ensemble scores')
-    parser.add_argument('--ensemble_input', type=str, default='obj_cat_att_att_freq_box_size', help='ensemble input')
+    parser.add_argument('--ensemble_thresh_by', type=str, default='top', help='how to thresh scores: topk/hard/soft')
+    parser.add_argument('--ensemble_thresh', type=float, default=1, help='threshold for ensemble scores')
+    parser.add_argument('--ensemble_input', type=str, default='obj_cat', help='ensemble input')
+    parser.add_argument('--ensemble_exp', type=str, default='', help='ensemble input')
 
     args = parser.parse_args()
 
     # make other options
     eval_path = 'output/eval_refvg/' + args.pred_name
     if args.pred_name.startswith('det'):
-        eval_path += '_%.1f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
+        eval_path += '_%.2f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
     if args.pred_name.startswith('ensemble'):
-        eval_path += '_%s_%s%.2f' % (args.ensemble_input, args.ensemble_thresh_by, args.ensemble_thresh)
+        if len(args.ensemble_exp) > 0:
+            eval_path += '/ensemble_%s_%s%.2f' % (args.ensemble_exp, args.ensemble_thresh_by, args.ensemble_thresh)
+        else:
+            eval_path += '/ensemble_IN_%s_%s%.2f' % (args.ensemble_input, args.ensemble_thresh_by, args.ensemble_thresh)
     eval_path += '_%s%d' % (args.split, args.eval_img_count)
     out_path = None
     if args.save_pred:
@@ -281,15 +289,20 @@ if __name__ == '__main__':
         elif args.pred_name.startswith('rmi_pred'):
             from _rmi.rmi_refvg_predictor import rmi_refvg_predictor
             predictions = rmi_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+        elif args.pred_name.startswith('lstm_pred'):
+            from _rmi.lstm_refvg_predictor import lstm_refvg_predictor
+            predictions = lstm_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
 
         elif args.pred_name.startswith('ensemble_pred'):
             from _ensemble.utils.ensemble_predictor import ensemble_predictor
-            if args.pred_name.endswith('logit'):
-                model_path = 'output/ensemble/try/IN_%s_logit_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' \
-                             % args.ensemble_input
+            if len(args.ensemble_exp) > 0:
+                model_path = 'output/ensemble/final/%s' % args.ensemble_exp
             else:
                 model_path = 'output/ensemble/final/' \
-                             'IN_%s_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' % args.ensemble_input
+                             'IN_%s_score_relative_attFalse_quadFalse_GT_box_iou_soft_fc_lr0.010000_bs1024_bn0'\
+                             % args.ensemble_input
+                             # 'IN_%s_score_relative_attFalse_quadFalse_GT_box_iou_soft_fc128_128_lr0.010000_bs1024_bn0'
+                             # 'IN_%s_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' % args.ensemble_input
             predictions = ensemble_predictor(split=args.split, thresh_by=args.ensemble_thresh_by,
                                              thresh=args.ensemble_thresh, eval_img_count=args.eval_img_count,
                                              out_path=out_path, model_path=model_path, checkpoint='epoch0_step1000.pth')

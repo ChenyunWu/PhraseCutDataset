@@ -22,7 +22,7 @@ def visualize(ax, img_data, task_i, pred_boxes=None, pred_mask=None, can_boxes=N
     gt_all_boxes = img_data['img_ins_boxes']
     vg_boxes = img_data['vg_boxes'][task_i]
     # vg_all_boxes = img_data['img_vg_boxes']
-    title = '%s\niou_box=%.3f\niou_mask=%.3f' % (phrase, iou_pred_box, iou_pred_mask)
+    title = '%s: %s\niou_box=%.3f\niou_mask=%.3f' % (img_data['task_ids'][task_i], phrase, iou_pred_box, iou_pred_mask)
 
     visualize_refvg(ax, img_id=img_data['image_id'], title=title, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes,
                     gt_all_boxes=gt_all_boxes, vg_boxes=vg_boxes,  pred_boxes=pred_boxes, pred_mask=pred_mask,

@@ -2,11 +2,12 @@ subsets = ['all',
            'c20', 'c100', 'c500', 'c500+', 'c21-100', 'c101-500',
            'i_single', 'i_multi', 'i_many',
            'p_name', 'p_att', 'p_att+', 'p_rel', 'p_rel+', 'p_verbose',
-           's_stuff', 's_obj'
+           't_stuff', 't_obj',
+           's_small', 's_mid', 's_large'
            ]
 
 
-def get_subset(phrase, phrase_structure, gt_boxes):
+def get_subset(phrase, phrase_structure, gt_boxes, gt_relative_size):
     cond = dict()
     for key in subsets:
         cond[key] = False
@@ -62,7 +63,14 @@ def get_subset(phrase, phrase_structure, gt_boxes):
         cond['i_multi'] = True
     if len(gt_boxes) >= 5:
         cond['i_many'] = True
-
+        
+    # gt size
+    if gt_relative_size < 0.02:
+        cond['s_small'] = True
+    elif gt_relative_size > 0.2:
+        cond['s_large'] = True
+    else:
+        cond['s_mid'] = True
     # stuff or not
     is_stuff = False
     for name in stuff_names:
@@ -70,9 +78,9 @@ def get_subset(phrase, phrase_structure, gt_boxes):
             is_stuff = True
             break
     if is_stuff:
-        cond['s_stuff'] = True
+        cond['t_stuff'] = True
     else:
-        cond['s_obj'] = True
+        cond['t_obj'] = True
     return cond
 
 

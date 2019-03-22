@@ -25,8 +25,8 @@ def iou_box(box1, box2, xywh=True, ioubp=False):
         return float(inter) / union, float(inter) / s1, float(inter) / s2
 
 
-def iou_boxes(boxes1, boxes2, w=0, h=0, xywh=True, ioubp=False):
-    if w==0 or h==0:
+def iou_boxes(boxes1, boxes2, w=0, h=0, xywh=True, ioubp=False, iandu=False):
+    if w == 0 or h == 0:
         region = boxes_region(list(boxes1) + list(boxes2), xywh)
         w = int(region[2] + 1)
         h = int(region[3] + 1)
@@ -35,18 +35,23 @@ def iou_boxes(boxes1, boxes2, w=0, h=0, xywh=True, ioubp=False):
 
     i = np.sum((np.logical_and(m1, m2) > 0), axis=None)
     u = np.sum((m1 + m2) > 0, axis=None)
-    if not ioubp:
-        if i == 0:
-            return 0
-        else:
-            return i * 1.0 / u
+    if i == 0:
+        iou = 0
     else:
+        iou = i * 1.0 / u
+    if not ioubp and not iandu:
+        return iou
+    out = [iou]
+    if ioubp:
         if i == 0:
-            return 0, 0, 0
+            out += [0, 0]
         else:
             b = np.sum(m1 > 0, axis=None)
             p = np.sum(m2 > 0, axis=None)
-            return i * 1.0 / u, i * 1.0 / b, i * 1.0 / p
+            out += [i * 1.0 / b, i * 1.0 / p]
+    if iandu:
+        out += [i, u]
+    return out
 
 
 def iou_boxes_polygons(boxes, polygons, w=0, h=0, xywh=True, ioubp=False):
@@ -121,21 +126,31 @@ def iou_polygons(ps1, ps2, w=0, h=0, ioubp=False):
             return i * 1.0 / u, i * 1.0 / b, i * 1.0 / p
 
 
-def iou_polygons_masks(ps, masks, ioubp=False):
+def iou_polygons_masks(ps, masks, ioubp=False, iandu=False, gt_size=False):
     h, w = masks[0].shape
     mps = polygons_to_mask(ps, w, h)
     mask = np.sum(masks, axis=0)
     i = np.sum((np.logical_and(mps, mask) > 0), axis=None)
     u = np.sum((mps + mask) > 0, axis=None)
-    if not ioubp:
-        if i == 0:
-            return 0
-        else:
-            return i * 1.0 / u
+    if i == 0:
+        iou = 0
     else:
+        iou = i * 1.0 / u
+    if not ioubp and not iandu and not gt_size:
+            return iou
+
+    out = [iou]
+    if ioubp:
         if i == 0:
-            return 0, 0, 0
+            out += [0, 0]
         else:
             b = np.sum(mps > 0, axis=None)
             p = np.sum(mask > 0, axis=None)
-            return i * 1.0 / u, i * 1.0 / b, i * 1.0 / p
+            out += [i * 1.0 / b, i * 1.0 / p]
+    if iandu:
+        out += [i, u]
+    if gt_size:
+        b = np.sum(mps > 0, axis=None)
+        s = b * 1.0 / (w * h)
+        out.append(s)
+    return out
