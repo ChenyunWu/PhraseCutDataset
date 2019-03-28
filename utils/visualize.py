@@ -112,7 +112,7 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.6)
+        ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7)
 
     # ax.set_frame_on(False)
     # ax.set_yticklabels([])
