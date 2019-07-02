@@ -81,7 +81,7 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
                 c = color
             mps = polygons_to_mask(ins_ps, img.size[1], img.size[0])
             masked = np.ma.masked_where(mps == 0, mps)
-            ax.imshow(masked, 'Greens_r', interpolation='none', alpha=0.6)
+            # ax.imshow(masked, 'Greens_r', interpolation='none', alpha=0.6)
             for p in ins_ps:
                 ax.add_patch(Polygon(p, fill=True, alpha=0.5, color=c))
     elif gt_polygons is not None:

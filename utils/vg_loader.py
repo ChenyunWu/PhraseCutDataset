@@ -82,19 +82,22 @@ class VGLoader(object):
         print('Number of valid unique relation predicates: %d / %d, frequency thresh: %d'
               % (self.rel_num, len(rel_count), self.rel_count_thresh))
 
-        print('split: %s' % split)
         if not split:
-            print('Loader loading scene_graphs_pp.json')
-            with open('data/refvg/scene_graphs_pp.json', 'r') as f:
-
-                self.images = json.load(f)
-        else:
-            ss = split.split('_')
-            self.images = []
-            for s in ss:
-                print('Loader loading scene_graphs_pp_%s.json' % s)
-                with open('data/refvg/scene_graphs_pp_%s.json' % s, 'r') as f:
-                    self.images += json.load(f)
+            split = 'train_val_test_miniv'
+        
+        print('split: %s' % split)
+        
+        # print('Loader loading scene_graphs_pp.json')
+        # with open('data/refvg/scene_graphs_pp.json', 'r') as f:
+        #     self.images = json.load(f)
+        # else:
+        ss = split.split('_')
+        self.images = []
+        for s in ss:
+            print('Loader loading scene_graphs_pp_%s.json' % s)
+            with open('data/refvg/scene_graphs_pp_%s.json' % s, 'r') as f:
+                self.images += json.load(f)
+                
         self.relations = []
         self.Anns = dict()
         self.Images = dict()
