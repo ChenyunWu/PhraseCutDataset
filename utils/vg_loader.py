@@ -23,7 +23,7 @@ from .iou import iou_box
 
 class VGLoader(object):
 
-    def __init__(self, word_embed=None, split=None, obj_filter=True, label_length=10, name_count_top=1272,
+    def __init__(self, word_embed=None, split=None, obj_filter=True, phrase_length=10, name_count_top=1272,
                  att_count_top=593, rel_count_top=126, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
 
         # self.word_to_ix = self.info['word_to_ix']
@@ -34,7 +34,7 @@ class VGLoader(object):
         # print('object cateogry size is ', len(self.ix_to_cat))
 
         self.word_embed = word_embed
-        self.label_length = label_length
+        self.phrase_length = phrase_length
         self.obj_size_thresh = obj_size_thresh
         self.iou_st_thresh = iou_st_thresh
         self.iou_dt_thresh = iou_dt_thresh
@@ -277,7 +277,7 @@ class VGLoader(object):
         return phrase_str, phrase_structure
 
     def encode_labels(self, sent_str_list):
-        return self.word_embed.encode_labels(sent_str_list, self.label_length)
+        return self.word_embed.encode_labels(sent_str_list, self.phrase_length)
 
     def decode_labels(self, labels):
         return self.word_embed.decode_labels(labels)

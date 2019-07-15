@@ -84,6 +84,24 @@ def iou_boxes_polygons(boxes, polygons, w=0, h=0, xywh=True, ioubp=False):
             return i * 1.0 / u, i * 1.0 / b, i * 1.0 / p
 
 
+def iou_mask(m1, m2, ioubp=False):
+    assert m1.shape == m2.shape
+    i = np.sum((np.logical_and(m1, m2) > 0), axis=None)
+    u = np.sum((m1, m2) > 0, axis=None)
+    if not ioubp:
+        if i == 0:
+            return 0
+        else:
+            return i * 1.0 / u
+    else:
+        if i == 0:
+            return 0, 0, 0
+        else:
+            b = np.sum(m1 > 0, axis=None)
+            p = np.sum(m2 > 0, axis=None)
+            return i * 1.0 / u, i * 1.0 / b, i * 1.0 / p
+
+
 def iou_boxes_mask(boxes, mask, xywh=True, ioubp=False):
     w, h = mask.shape
     b_mask = boxes_to_mask(boxes, w, h, xywh)

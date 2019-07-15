@@ -307,14 +307,6 @@ if __name__ == '__main__':
                         default='ensemble_pred')
     parser.add_argument('--pred_path', type=str, help='path to the prediction results. If None, run the predictor.',
                         default='output/eval_refvg/rmi_pred_test0/test.npy')
-                        # default='output/eval_refvg/ensemble_IN_obj_cat_msub_wsub_mloc_wloc_mrel_wrel_m_att_logits_topk1.00_test0/test.npy')
-    # output/eval_refvg/ensemble_IN_obj_cat_msub_wsub_mloc_wloc_mrel_wrel_m_att_logits_soft0.60_test0/test_2814.npy
-    # output/eval_refvg/ensemble_pred_topk1.000000_miniv0/miniv_17.npy
-    # 'output/eval_refvg/%s/test_2814.npy'
-    # 'ours': 'ensemble_IN_obj_cat_msub_wsub_mloc_wloc_mrel_wrel_m_att_logits_soft0.60_test0',
-    # 'MRCN': 'det_upperbound_0.15_1_gt_test0',
-    # 'Matt': 'det_mattnet_pred_0.15_50_det_test0',
-    # 'RMI': 'rmi_pred_test0'}
     parser.add_argument('--split', type=str, help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc',
                         default='test')
     parser.add_argument('--eval_img_count', type=int, help='number of images to evaluate. <=0 means the whole split',
@@ -323,18 +315,6 @@ if __name__ == '__main__':
                         default=0)
     parser.add_argument('--subset', type=int, default=1, help='whether to enable subset analysis')
     parser.add_argument('--save_pred', type=int, default=1, help='whether to save predictions to file.')
-
-    # parameters for det experiments: score_thresh=0.1, max_can=10, sort_label='gt'
-    parser.add_argument('--det_score_thresh', type=float, default=0.1, help='score threshold for detected candidates')
-    parser.add_argument('--det_max_can', type=int, default=10, help='max number of detected candidates')
-    parser.add_argument('--det_sort_label', type=str, default='gt', help='how to rank the candidates. '
-                                     '"gt": logits of the phrase name category; "det": scores of the detected category')
-
-    # parameters for ensemble pred: thresh_by='topk'/'hard'/'soft', thresh
-    parser.add_argument('--ensemble_thresh_by', type=str, default='top', help='how to thresh scores: topk/hard/soft')
-    parser.add_argument('--ensemble_thresh', type=float, default=1, help='threshold for ensemble scores')
-    parser.add_argument('--ensemble_input', type=str, default='obj_cat_msub_wsub_mloc_wloc_mrel_wrel_m_att_scores', help='ensemble input')
-    parser.add_argument('--ensemble_exp', type=str, default='', help='ensemble input')
 
     args = parser.parse_args()
 
@@ -359,46 +339,6 @@ if __name__ == '__main__':
 
         elif args.pred_name == 'ins_rand':
             predictions = ins_rand_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
-        elif args.pred_name == 'ins_mattnet_pred':
-            from _comprehend.predictors.mattnet_ins_predictor import mattnet_ins_predictor
-            predictions = mattnet_ins_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
-
-        elif args.pred_name.startswith('det_rand'):
-            from _comprehend.predictors.det_baseline_predictor import det_rand
-            predictions = det_rand(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
-                                   score_thresh=args.det_score_thresh, max_can=args.det_max_can,
-                                   sort_label=args.det_sort_label)
-        elif args.pred_name.startswith('det_upperbound'):
-            from _comprehend.predictors.det_baseline_predictor import det_upperbound
-            predictions = det_upperbound(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
-                                         score_thresh=args.det_score_thresh, max_can=args.det_max_can,
-                                         sort_label=args.det_sort_label)
-        elif args.pred_name.startswith('det_mattnet_pred'):
-            from _comprehend.predictors.mattnet_det_predictor import mattnet_det_predictor
-            predictions = mattnet_det_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path,
-                                                score_thresh=args.det_score_thresh, max_can=args.det_max_can,
-                                                sort_label=args.det_sort_label)
-        elif args.pred_name.startswith('rmi_pred'):
-            from _rmi.rmi_refvg_predictor import rmi_refvg_predictor
-            predictions = rmi_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
-        elif args.pred_name.startswith('lstm_pred'):
-            from _rmi.lstm_refvg_predictor import lstm_refvg_predictor
-            predictions = lstm_refvg_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
-
-        elif args.pred_name.startswith('ensemble_pred'):
-            from _ensemble.utils.ensemble_predictor import ensemble_predictor
-            if len(args.ensemble_exp) > 0:
-                model_path = 'output/ensemble/final/%s' % args.ensemble_exp
-            else:
-                model_path = 'output/ensemble/final/' \
-                             'IN_%s_score_relative_attFalse_quadFalse_GT_box_iou_soft_fc_lr0.010000_bs1024_bn0'\
-                             % args.ensemble_input
-                             # 'IN_%s_score_relative_attFalse_quadFalse_GT_box_iou_soft_fc128_128_lr0.010000_bs1024_bn0'
-                             # 'IN_%s_score_relative_GT_box_iou_soft_fc64_lr0.010000_bs1024_bn0' % args.ensemble_input
-            predictions = ensemble_predictor(split=args.split, thresh_by=args.ensemble_thresh_by,
-                                             thresh=args.ensemble_thresh, eval_img_count=args.eval_img_count,
-                                             out_path=out_path, model_path=model_path, checkpoint='epoch0_step1000.pth')
-
         else:
             raise NotImplementedError
     else:

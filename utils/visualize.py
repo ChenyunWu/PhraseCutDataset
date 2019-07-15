@@ -12,17 +12,18 @@ from iou import polygons_to_mask
 
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
-visualize_colors = {'title': 'black', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue', 'gt_all_boxes': 'blue',
+visualize_colors = {'title': 'black', 'gt_mask': 'deepskyblue', 'gt_boxes': 'blue', 'gt_all_boxes': 'blue',
                     'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red', 'pred_mask': 'autumn',
                     'can_boxes': 'red'}
 
 
-def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None,
-                    gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None,
+def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, gt_mask=None, gt_Polygons=None, gt_polygons=None,
+                    gt_boxes=None, gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None,
                     can_boxes=None, set_colors=None, xywh=True):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
+    Warning: outdated documentation
     :param ax:
     :param img_id: if > 0, get img from local path
     :param img_url: if img_id<=0, get img from this url. Must set either img_id or img_url
@@ -47,15 +48,16 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
 
     colors = modify_color(set_colors)
 
-    if img_id < 0 and not img_url:
+    if img_id < 0 and img_url is None and img is None:
         return
 
     # show img
-    if img_id:
-        img = Image.open('data/refvg/images/%d.jpg' % img_id)
-    else:
-        response = requests.get(img_url, verify=False)
-        img = Image.open(StringIO(response.content))
+    if img is None:
+        if img_id:
+            img = Image.open('data/refvg/images/%d.jpg' % img_id)
+        else:
+            response = requests.get(img_url, verify=False)
+            img = Image.open(StringIO(response.content))
     ax.imshow(img)
 
     if not xywh:
@@ -72,15 +74,17 @@ def visualize_refvg(ax, img_id=-1, img_url=None, title=None, gt_Polygons=None, g
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['gt_all_boxes'],
                                    linewidth=0.3, linestyle=':', alpha=0.5))
 
-    color = colors['gt_polygons']
-    if gt_Polygons is not None:
+    color = colors['gt_mask']
+    if gt_mask is not None:
+        ax.imshow(gt_mask, color, interpolation='none', alpha=0.5)
+    elif gt_Polygons is not None:
         for ins_i, ins_ps in enumerate(gt_Polygons):
             if color == 'colorful':
                 c = 'C%d' % (ins_i % 10)
             else:
                 c = color
-            mps = polygons_to_mask(ins_ps, img.size[1], img.size[0])
-            masked = np.ma.masked_where(mps == 0, mps)
+            # mps = polygons_to_mask(ins_ps, img.size[1], img.size[0])
+            # masked = np.ma.masked_where(mps == 0, mps)
             # ax.imshow(masked, 'Greens_r', interpolation='none', alpha=0.6)
             for p in ins_ps:
                 ax.add_patch(Polygon(p, fill=True, alpha=0.5, color=c))
