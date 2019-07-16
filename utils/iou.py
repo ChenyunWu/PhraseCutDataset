@@ -87,7 +87,7 @@ def iou_boxes_polygons(boxes, polygons, w=0, h=0, xywh=True, ioubp=False):
 def iou_mask(m1, m2, ioubp=False):
     assert m1.shape == m2.shape
     i = np.sum((np.logical_and(m1, m2) > 0), axis=None)
-    u = np.sum((m1, m2) > 0, axis=None)
+    u = np.sum(np.logical_or(m1, m2) > 0, axis=None)
     if not ioubp:
         if i == 0:
             return 0

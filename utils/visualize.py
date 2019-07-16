@@ -1,25 +1,25 @@
-import requests
 import StringIO
-import numpy as np
-from PIL import Image
+
 import matplotlib.pyplot as plt
+import numpy as np
+import requests
+from PIL import Image
 from matplotlib.patches import Rectangle, Polygon
 
 plt.switch_backend('agg')
 
 from data_transfer import xyxy_to_xywh
-from iou import polygons_to_mask
 
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
-visualize_colors = {'title': 'black', 'gt_mask': 'deepskyblue', 'gt_boxes': 'blue', 'gt_all_boxes': 'blue',
-                    'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red', 'pred_mask': 'autumn',
-                    'can_boxes': 'red'}
+visualize_colors = {'title': 'black', 'gt_mask': 'Blues', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue',
+                    'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red',
+                    'pred_mask': 'autumn', 'can_boxes': 'red'}
 
 
-def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, gt_mask=None, gt_Polygons=None, gt_polygons=None,
-                    gt_boxes=None, gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None,
-                    can_boxes=None, set_colors=None, xywh=True):
+def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, fontsize=5, gt_mask=None, gt_Polygons=None,
+                    gt_polygons=None, gt_boxes=None, gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None,
+                    pred_boxes=None, pred_mask=None, can_boxes=None, set_colors=None, xywh=True):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
@@ -74,9 +74,9 @@ def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, gt_mask=N
             ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['gt_all_boxes'],
                                    linewidth=0.3, linestyle=':', alpha=0.5))
 
-    color = colors['gt_mask']
+    color = colors['gt_polygons']
     if gt_mask is not None:
-        ax.imshow(gt_mask, color, interpolation='none', alpha=0.5)
+        ax.imshow(gt_mask, colors['gt_mask'], interpolation='none', alpha=0.5)
     elif gt_Polygons is not None:
         for ins_i, ins_ps in enumerate(gt_Polygons):
             if color == 'colorful':
@@ -124,5 +124,5 @@ def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, gt_mask=N
     ax.set_axis_off()
 
     if title:
-        ax.set_title(title, color=colors['title'])
+        ax.set_title(title, color=colors['title'], fontsize=fontsize)
     return
