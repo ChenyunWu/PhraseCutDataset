@@ -62,7 +62,12 @@ class VGLoader(object):
               % (self.name_num, len(name_count), self.name_count_thresh))
         self.name_to_cnt = {k: v for k, v in name_count.items() if v >= self.name_count_thresh}
         self.ix_to_name = self.name_to_cnt.keys()
+        # self.ix_to_name = [k for (k, v) in sorted(self.name_to_cnt.items(), key=lambda kv: -kv[1])]
+        # print('top 10 cat: ' + ';'.join(self.ix_to_name[:10]))
         self.name_to_ix = {name: ix for ix, name in enumerate(self.ix_to_name)}
+        cnt_rank = sorted(self.name_to_cnt.items(), key=lambda kv: -kv[1])
+        self.name_to_cnt_rank = {n: i for i, (n, c) in enumerate(cnt_rank)}
+        self.names_sorted = [n for (n, c) in cnt_rank]
 
         # prepare attributes
         att_count_sorted = att_count.values()

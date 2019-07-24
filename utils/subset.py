@@ -114,8 +114,9 @@ def get_subset(phrase, phrase_structure, gt_boxes, gt_relative_size):
     return cond
 
 
-people_names = ['person', 'people', 'man', 'men', 'woman', 'women', 'kid', 'kids', 'baby', 'babies', 'boy', 'boys',
-                'girl', 'girls', 'child', 'children', 'lady', 'player', 'guy', 'guys']
+people_names = ['person', 'people', 'man', 'men', 'woman', 'women', 'kid', 'kids', 'baby', 'boy', 'boys', 'girl',
+                'girls', 'child', 'children', 'lady', 'player', 'players', 'guy', 'skier', 'crowd', 'skateboarder',
+                'tennis player', 'snowboarder', 'spectators', 'baseball player', 'male', 'skiers', 'he', 'passengers']
 stuff_names = ['water', 'waterdrops', 'sea', 'river', 'fog', 'ground', 'field', 'platform', 'rail', 'pavement', 'road',
                'gravel', 'mud', 'dirt', 'snow', 'sand', 'solid', 'hill', 'mountain', 'stone', 'rock', 'wood', 'sky',
                'cloud', 'vegetation', 'straw', 'moss', 'branch', 'leaf', 'leaves', 'bush', 'tree', 'grass',

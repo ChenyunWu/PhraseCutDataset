@@ -12,35 +12,46 @@ from data_transfer import xyxy_to_xywh
 
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
-visualize_colors = {'title': 'black', 'gt_mask': 'Blues', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue',
-                    'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red',
-                    'pred_mask': 'autumn', 'can_boxes': 'red'}
+# visualize_colors = {'title': 'black', 'gt_mask': 'Blues', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue',
+#                     'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red',
+#                     'pred_mask': 'autumn', 'can_boxes': 'red'}
+
+visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darkorange', 'gt_boxes': 'chocolate',
+                    'gt_all_boxes': 'gold', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'deepskyblue',
+                    'pred_mask': 'GnBu', 'can_boxes': 'darkcyan'}
 
 
-def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, fontsize=5, gt_mask=None, gt_Polygons=None,
+def visualize_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5, gt_mask=None, gt_Polygons=None,
                     gt_polygons=None, gt_boxes=None, gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None,
-                    pred_boxes=None, pred_mask=None, can_boxes=None, set_colors=None, xywh=True):
+                    pred_boxes=None, pred_mask=None, can_boxes=None, set_colors=None, xywh=True, cbar=None):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
-    Warning: outdated documentation
-    :param ax:
+    :param ax: required
+    :param fig: only needed for creating color bar
+    :param img: PIL image
     :param img_id: if > 0, get img from local path
-    :param img_url: if img_id<=0, get img from this url. Must set either img_id or img_url
+    :param img_url: if img_id<=0, get img from this url. Must set one of img, img_id or img_url
     :param title: plot title. better to put referring phrases here
-    :param gt_Polygons: Polygons from AMT. list of {'instance_id': id, 'points': [[x1, y1], [x2, y2], ...]}
+    :param fontsize: fontsize for title
+    :param gt_mask: 2D binary numpy array the same shape as the img
+    :param gt_Polygons: Polygons from AMT. list of instance polygons
     :param gt_polygons: Only used when gt_Polygons=None [(polygon:)[(point:)[x1, y1], [x2, y2], ...], [[],[],...],...]
     :param gt_boxes: gt instance boxes from AMT polygons.[[x1, y1, x2, y2],[],...]
     :param gt_all_boxes: all instance boxes from AMT polygons in this img
     :param vg_boxes: vg boxes used to generate the phrase
     :param vg_all_boxes: all boxes from VG (after filtering)
     :param pred_boxes: predicted boxes
-    :param pred_mask: predicted mask. 2D binary numpy array the same shape as the img
+    :param pred_mask: predicted mask. 2D numpy array the same shape as the img
+    :param can_boxes: candidate boxes
+    :param set_colors: change default color by a dict
+    :param xywh: whether input boxes are xywh or xyxy
+    :param cbar: which color bar to show. None, 'gt', 'pred', only used when gt_mask / pred_mask is provided
     :return: Nothing
     """
     def modify_color(d):
         colors = visualize_colors
-        if not d:
+        if d is None:
             return colors
         for name, color in d.items():
             colors[name] = color
@@ -50,6 +61,9 @@ def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, fontsize=
 
     if img_id < 0 and img_url is None and img is None:
         return
+
+    if title:
+        ax.set_title(title, color=colors['title'], fontsize=fontsize)
 
     # show img
     if img is None:
@@ -76,7 +90,11 @@ def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, fontsize=
 
     color = colors['gt_polygons']
     if gt_mask is not None:
-        ax.imshow(gt_mask, colors['gt_mask'], interpolation='none', alpha=0.5)
+        masked = np.ma.masked_where(gt_mask == 0, gt_mask)
+        p = ax.imshow(masked, colors['gt_mask'], interpolation='none', alpha=0.5, vmin=0, vmax=1.0)
+        if cbar == 'gt':
+            cb = fig.colorbar(p, ax=ax, format='%.1f')
+            cb.ax.tick_params(labelsize=5)
     elif gt_Polygons is not None:
         for ins_i, ins_ps in enumerate(gt_Polygons):
             if color == 'colorful':
@@ -116,13 +134,14 @@ def visualize_refvg(ax, img_id=-1, img_url=None, img=None, title=None, fontsize=
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7)
+        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=0.2)
+        if cbar == 'pred':
+            cb = fig.colorbar(p, ax=ax, format='%.2f')
+            cb.ax.tick_params(labelsize=4)
 
     # ax.set_frame_on(False)
     # ax.set_yticklabels([])
     # ax.set_xticklabels([])
     ax.set_axis_off()
 
-    if title:
-        ax.set_title(title, color=colors['title'], fontsize=fontsize)
     return
