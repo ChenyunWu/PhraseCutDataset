@@ -282,10 +282,10 @@ class VGLoader(object):
         return phrase_str, phrase_structure
 
     def encode_labels(self, sent_str_list):
-        return self.word_embed.encode_labels(sent_str_list, self.phrase_length)
+        return self.word_embed.encode_sentences_to_labels(sent_str_list, self.phrase_length)
 
     def decode_labels(self, labels):
-        return self.word_embed.decode_labels(labels)
+        return self.word_embed.decode_labels_to_sentences(labels)
 
     def filter_objects(self, img_info, objects, relations):
         img_w = img_info['width']

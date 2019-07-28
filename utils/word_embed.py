@@ -19,6 +19,7 @@ class WordEmbed:
 
         self.ix_to_word = lookup['ix_to_word'][:end_ix]
         self.word_to_ix = {word: ix for ix, word in enumerate(self.ix_to_word)}
+        self.vocab_size = end_ix
 
         print('vocabulary size: %d; minimum word frequency: %d' % (end_ix, lookup['freq'][end_ix - 1]))
 
@@ -27,26 +28,26 @@ class WordEmbed:
         elif init_embed == 'random':
             self.embeddings = np.random.randn(end_ix, 300)
         else:
-            raise NotImplementedError
+            self.embeddings = None
 
-    def encode_labels(self, sent_str_list, label_length):
+    def encode_sentences_to_labels(self, sent_str_list, label_length):
         """Input:
         sent_str_list: list of n sents in string format
         return int32 (n, label_length) zeros padded in end
         """
         num_sents = len(sent_str_list)
-        L = np.zeros((num_sents, label_length), dtype=np.int32)
+        labels = np.zeros((num_sents, label_length), dtype=np.int32)
         for i, sent_str in enumerate(sent_str_list):
             if isinstance(sent_str, list):
                 tokens = sent_str
             else:
                 tokens = sent_str.split()
             for j, w in enumerate(tokens):
-              if j < label_length:
-                  L[i, j] = self.word_to_ix[w] if w in self.word_to_ix else self.word_to_ix['<UNK>']
-        return L
+                if j < label_length:
+                    labels[i, j] = self.word_to_ix[w] if w in self.word_to_ix else self.word_to_ix['<UNK>']
+        return labels
 
-    def decode_labels(self, labels):
+    def decode_labels_to_sentences(self, labels):
         """
         labels: int32 (n, label_length) zeros padded in end
         return: list of sents in string format
