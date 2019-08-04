@@ -15,12 +15,9 @@ sys.path.append(os.path.abspath(dataset_path))
 
 from utils.iou import *
 from utils.subset import *
-from utils.eval_utils import *
-from utils.visualize import visualize_refvg
+from utils.predictor_examples import *
+from utils.visualize_utils import plot_refvg
 
-
-# colors = {'title': 'black', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue', 'gt_all_boxes': 'blue',
-#           'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red', 'pred_mask': 'autumn', 'can_boxes': 'red'}
 
 colors = {'title': 'black', 'gt_polygons': 'darkorange', 'gt_boxes': 'chocolate',
           'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'deepskyblue', 'pred_mask': 'GnBu_r',
@@ -37,7 +34,7 @@ def do_visualize(pred_dict, can_box_pred, task_ids=[], vis_count=10, split='test
 
     pred_str = '_'.join(pred_dict.keys())
     if can_box_pred is not None:
-        pred_str = 'can%d_%s' %(can_box_num, pred_str)
+        pred_str = 'can%d_%s' % (can_box_num, pred_str)
     out_path = os.path.join(out_path, pred_str, split)
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -76,19 +73,19 @@ def do_visualize(pred_dict, can_box_pred, task_ids=[], vis_count=10, split='test
         mps = polygons_to_mask(gt_polygons, w, h)
         b = np.sum(mps > 0, axis=None)
         rsize = b * 1.0 / (w * h)
-        subset_cond = get_subset(phrase, p_structure, gt_boxes, rsize)
+        subset_cond = get_subset(p_structure, gt_boxes, rsize)
         subsets = [k for k, v in subset_cond.items() if v]
         subset_str = ' '.join(subsets)
 
         # 00: gt with gt mask and box
-        visualize_refvg(axes[0][0], img_id=img_id, gt_polygons=gt_polygons, gt_boxes=gt_boxes, title=phrase,
-                        set_colors=colors)
+        plot_refvg(axes[0][0], img_id=img_id, gt_polygons=gt_polygons, gt_boxes=gt_boxes, title=phrase,
+                   set_colors=colors)
 
         # 01:
         n_a_r = '|'.join(p_structure['attributes']) + '||' + p_structure['name'] + '||' \
                 + '|'.join(r['predicate'] for r in p_structure['relations'])
         vg_boxes = img_data['vg_boxes'][task_ix]
-        visualize_refvg(axes[0][1], img_id=img_id, vg_boxes=vg_boxes, title=n_a_r, set_colors=colors)
+        plot_refvg(axes[0][1], img_id=img_id, vg_boxes=vg_boxes, title=n_a_r, set_colors=colors)
 
         # 02:
         vg_str = ''
@@ -111,8 +108,8 @@ def do_visualize(pred_dict, can_box_pred, task_ids=[], vis_count=10, split='test
             else:
                 pred_mask = None
             iou = iou_polygons_masks(gt_polygons, [pred_mask])
-            visualize_refvg(axes[0, 3], img_id=img_id, pred_boxes=can_boxes, pred_mask=pred_mask,
-                            title='mrcn ub:%.4f; showing:%d' % (iou, len(can_boxes)), set_colors=colors)
+            plot_refvg(axes[0, 3], img_id=img_id, pred_boxes=can_boxes, pred_mask=pred_mask,
+                       title='mrcn ub:%.4f; showing:%d' % (iou, len(can_boxes)), set_colors=colors)
 
         # 1x:
         i = 0
@@ -126,8 +123,8 @@ def do_visualize(pred_dict, can_box_pred, task_ids=[], vis_count=10, split='test
             else:
                 pred_mask = None
             iou = iou_polygons_masks(gt_polygons, [pred_mask])
-            visualize_refvg(axes[1, i], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
-                            title='%s:%.4f' % (p_name, iou), set_colors=colors)
+            plot_refvg(axes[1, i], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
+                       title='%s:%.4f' % (p_name, iou), set_colors=colors)
             i += 1
             if i == 4:
                 break

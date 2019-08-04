@@ -10,24 +10,8 @@ current_path = os.path.realpath(__file__)
 dataset_path = os.path.join(current_path, '../..')
 sys.path.append(os.path.abspath(dataset_path))
 
-from utils.visualize import visualize_refvg
 from utils.refvg_loader import RefVGLoader
 from utils.data_transfer import *
-
-
-def visualize(ax, img_data, task_i, pred_boxes=None, pred_mask=None, can_boxes=None, iou_pred_box=0, iou_pred_mask=0):
-    phrase = img_data['phrases'][task_i]
-    gt_Polygons = img_data['gt_Polygons'][task_i]
-    gt_boxes = img_data['gt_boxes'][task_i]
-    gt_all_boxes = img_data['img_ins_boxes']
-    vg_boxes = img_data['vg_boxes'][task_i]
-    # vg_all_boxes = img_data['img_vg_boxes']
-    title = '%s: %s\niou_box=%.3f\niou_mask=%.3f' % (img_data['task_ids'][task_i], phrase, iou_pred_box, iou_pred_mask)
-
-    visualize_refvg(ax, img_id=img_data['image_id'], title=title, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes,
-                    gt_all_boxes=gt_all_boxes, vg_boxes=vg_boxes,  pred_boxes=pred_boxes, pred_mask=pred_mask,
-                    can_boxes=can_boxes)
-    return
 
 
 def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_gt'):
@@ -45,8 +29,9 @@ def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/
             predictions[img_id][task_id] = {'pred_boxes': pred_box_list, 'pred_mask': pred_mask}
         if len(predictions) >= eval_img_count > 0:
             break
-    print('rang_vg_predictor: saving predictions to file...')
+
     if out_path is not None:
+        print('rang_vg_predictor: saving predictions to %s' % out_path)
         if not os.path.exists(out_path):
             os.makedirs(out_path)
         fname = split
@@ -74,8 +59,9 @@ def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refv
             predictions[img_id][task_id] = {'pred_boxes': pred_boxes, 'pred_mask': pred_mask}
         if len(predictions) >= eval_img_count > 0:
             break
-    print('rang_vg_predictor: saving predictions to file...')
+
     if out_path is not None:
+        print('rang_vg_predictor: saving predictions to %s' % out_path)
         if not os.path.exists(out_path):
             os.makedirs(out_path)
         fname = split
@@ -108,8 +94,9 @@ def ins_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_ref
             predictions[img_id][task_id] = {'pred_boxes': [pred_box], 'pred_mask': pred_mask, 'correct': correct}
         if len(predictions) >= eval_img_count > 0:
             break
-    print('ins_rand_predictor: saving predictions to file...')
+
     if out_path is not None:
+        print('ins_rand_predictor: saving predictions to: %s' % out_path)
         if not os.path.exists(out_path):
             os.makedirs(out_path)
         fname = split

@@ -8,7 +8,7 @@ subsets = ['all',
            ]
 
 
-def get_subset(phrase, phrase_structure, gt_boxes, gt_relative_size):
+def get_subset(phrase_structure, gt_boxes, gt_relative_size):
     cond = dict()
     for key in subsets:
         cond[key] = False

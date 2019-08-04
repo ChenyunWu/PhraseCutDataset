@@ -6,7 +6,6 @@ import argparse
 import os
 import sys
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 plt.switch_backend('agg')
 current_path = os.path.realpath(__file__)
@@ -14,152 +13,129 @@ dataset_path = os.path.join(current_path, '..')
 sys.path.append(os.path.abspath(dataset_path))
 
 from utils.iou import *
-from utils.subset import *
-from utils.eval_utils import *
+import utils.subset as subset_utils
+from utils.predictor_examples import *
 
 
-def evaluate(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=0,
-             visualize_img_count=0, out_path='output/eval_refvg/temp', verbose=True):
+def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='temp', out_path='output/eval_refvg/',
+             analyze_subset=True, log_to_summary=False, save_pred=True, verbose=True):
 
     # initialize
-    if loader is None:
-        loader = RefVGLoader(split=split)
-        loader.shuffle()
-    if eval_img_count < 0:
-        eval_img_count = len(loader.img_ids)
+    if refvg_loader is None:
+        refvg_loader = RefVGLoader(split=refvg_split)
+        refvg_loader.shuffle()
 
-    # stats for each subset: correct_count, iou_pred_box, iou_pred_mask, i_pred_mask, u_pred_mask
+    # stats for each subset: correct_count, iou_box, iou_mask, i_mask, u_mask
     stats = {'all': [0, [], [], [], []]}
-    if subset:
-        for k in subsets:
+    if analyze_subset:
+        for k in subset_utils.subsets:
             stats[k] = [0, [], [], [], []]
-    if out_path is not None:
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-    plots = {}
-    to_plot = 0
-    pdf = None
-    if visualize_img_count > 0:
-        pdf = PdfPages(os.path.join(out_path, 'vis_%s_%s%d.pdf' % (pred_name, split, eval_img_count)))
-        to_plot = len(stats.keys())
-        for k in stats.keys():
-            fig, axes = plt.subplots(int((visualize_img_count + 2) / 3), 3, figsize=(8.5, 1.1 * visualize_img_count))
-            plots[k] = [fig, axes, 0]
 
     correct_count = 0
     task_count = 0
     for img_i, img_id in enumerate(predictions.keys()):
-        if img_id not in loader.img_ids:
+        if img_id not in refvg_loader.img_ids:
+            print('WARNING: IMG %d from predction is not in RefVG %s. Ignored.' % (img_id, refvg_split))
             continue
-        img_data = loader.get_img_ref_data(img_id)
+        img_data = refvg_loader.get_img_ref_data(img_id)
         for task_i, task_id in enumerate(img_data['task_ids']):
-            # predictions
             if task_id not in predictions[img_id]:
-                print('no prediction: %s' % task_id)
+                print('WARNING: no prediction: %s_%s' % (img_id, task_id))
                 continue
             task_count += 1
             pred = predictions[img_id][task_id]
-            correct = pred.get('correct', 0)
-            pred_boxes = pred.get('pred_boxes', [[0, 0, 1, 1]])
-            pred_mask_bin = pred.get('pred_mask', None)
-            if pred_mask_bin is None:
-                pred_mask = np.zeros((img_data['height'], img_data['width']))
-            else:
-                pred_mask = np.unpackbits(pred_mask_bin)[:img_data['height'] * img_data['width']]\
-                    .reshape((img_data['height'], img_data['width']))
-            can_boxes = pred.get('can_boxes', None)
-
-            # ground-truth
+            # load for convenience
+            phrase_structure = img_data['p_structures'][task_i]
             gt_boxes = img_data['gt_boxes'][task_i]
             gt_Polygons = img_data['gt_Polygons'][task_i]
-            gt_polygons = []
-            for ps in gt_Polygons:
-                gt_polygons += ps
+            pred_boxes = pred.get('pred_boxes', None)
+            pred_mask_bin = pred.get('pred_mask', None)
+            correct = pred.get('correct', 0)
 
-            # compute stats
-            correct_count += correct
-            iou_pred_box = iou_boxes(pred_boxes, gt_boxes)
-            iou_pred_mask, i_pred_mask, u_pred_mask, gt_relative_size = iou_polygons_masks(gt_polygons, [pred_mask],
-                                                                                           iandu=True, gt_size=True)
+            if 'iou_mask' in pred:
+                # if compared with gt before, directly load from pred dict
+                iou_box = pred['iou_box']
+                iou_mask = pred['iou_mask']
+                i_mask = pred['i_mask']
+                u_mask = pred['u_mask']
+                gt_relative_size = pred['gt_relative_size']
 
-            # log subset stats, make visualizations
-            phrase = img_data['phrases'][task_i]
-            phrase_structure = img_data['p_structures'][task_i]
-            cond = {'all': True}
-            if subset:
-                cond = get_subset(phrase, phrase_structure, gt_boxes, gt_relative_size)
-            visualized = False
-            for k, v in cond.items():
-                if v:
-                    stats[k][0] += correct
-                    stats[k][1].append(float(iou_pred_box))
-                    stats[k][2].append(float(iou_pred_mask))
-                    stats[k][3].append(float(i_pred_mask))
-                    stats[k][4].append(float(u_pred_mask))
+            else:
+                # compare with gt, log to pred dict
+                if pred_mask_bin is None:
+                    # pred_mask = np.zeros((img_data['height'], img_data['width']))
+                    pred_mask = None
+                else:
+                    pred_mask = np.unpackbits(pred_mask_bin)[:img_data['height'] * img_data['width']]\
+                        .reshape((img_data['height'], img_data['width']))
 
-                    # visualize
-                    if not visualized and visualize_img_count > 0:
-                        fig, axes, v_count = plots[k]
-                        if -1 < v_count < visualize_img_count:
-                            visualized = True
-                            ax = axes.flatten()[v_count]
-                            visualize(ax, img_data, task_i, pred_boxes, pred_mask, can_boxes, iou_pred_box,
-                                      iou_pred_mask)
-                            plots[k][2] += 1
-                            print('visualised %s-%d:%s' % (k, v_count, task_id))
-                            if plots[k][2] == visualize_img_count:
-                                fig.suptitle('Subset: ' + k)
-                                fig.tight_layout(rect=[0, 0, 1, 0.97])
-                                pdf.savefig(fig, dpi=300)
-                                plt.close(fig)
-                                print('%s visualization done.' % k)
-                                to_plot -= 1
-                                plots[k][2] = -1
-                                if to_plot == 0:
-                                    pdf.close()
+                gt_polygons = list()
+                for ps in gt_Polygons:
+                    gt_polygons += ps
+
+                # compute stats
+                correct_count += correct
+                iou_box, iou_mask, i_mask, u_mask, gt_relative_size = 0.0, 0.0, 0.0, 0.0, 0.0
+                if pred_boxes is not None:
+                    iou_box = iou_boxes(pred_boxes, gt_boxes)
+                if pred_mask is not None:
+                    iou_mask, i_mask, u_mask, gt_relative_size = iou_polygons_masks(gt_polygons, [pred_mask],
+                                                                                iandu=True, gt_size=True)
+                pred['iou_box'] = iou_box
+                pred['iou_mask'] = iou_mask
+                pred['i_mask'] = i_mask
+                pred['u_mask'] = u_mask
+                pred['gt_relative_size'] = gt_relative_size
+
+            subsets = ['all']
+            if analyze_subset:
+                if 'subsets' in pred:
+                    subsets = pred['subsets']
+                else:
+                    cond = subset_utils.get_subset(phrase_structure, gt_boxes, gt_relative_size)
+                    subsets = [k for k, v in cond.items() if v]
+                    pred['subsets'] = subsets
+
+            # analyze (by subsets), make visualizations
+            for k in subsets:
+                stats[k][0] += correct
+                stats[k][1].append(float(iou_box))
+                stats[k][2].append(float(iou_mask))
+                stats[k][3].append(float(i_mask))
+                stats[k][4].append(float(u_mask))
 
         # print
         if verbose:
             print('image[%d/%d] %d phrases. Up till now: box_acc %.3f, mean_iou_box %.3f, mean_iou_mask %.3f' %
-                  (img_i, eval_img_count, len(img_data['task_ids']), stats['all'][0] * 1.0 / task_count,
+                  (img_i, len(predictions), len(img_data['task_ids']), stats['all'][0] * 1.0 / task_count,
                    np.mean(stats['all'][1]), np.mean(stats['all'][2])))
 
-        # if we've done enough images
-        if img_i + 1 == eval_img_count:
-            break
-
-    if to_plot > 0:
-        for k in plots.keys():
-            fig, _, v_count = plots[k]
-            if v_count >= 0:
-                fig.suptitle('Subset: ' + k)
-                fig.tight_layout(rect=[0, 0, 1, 0.97])
-                pdf.savefig(fig, dpi=300)
-                plt.close(fig)
-                print('%s visualization %d.' % (k, v_count))
-        pdf.close()
-    print('Start to analyze %s:' % pred_name)
-    results = analyze_subset_stats(stats, out_path, split, eval_img_count)
-    return results, stats
+    exp_name = '%s-%s-%d' % (pred_name, refvg_split, len(predictions))
+    print('saving %s to %s' % (exp_name, out_path))
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    if save_pred:
+        pred_path = os.path.join(out_path, 'pred-eval_%s.npy' % exp_name)
+        np.save(pred_path, predictions)
+    print('Start to analyze %s:' % exp_name)
+    analyze_subset_stats(stats, exp_name, out_path, log_to_summary)
+    return predictions
 
 
-def analyze_subset_stats(stats, out_path, split, img_num):
+def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
     subset_results = {}
     result_f = None
     summary_mask = None
     summary_box = None
     summary_subset = None
-    exp_str = ''
-    subset_summary_str = ''
+    subset_summary_str = exp_name
     if out_path is not None:
-        # out_path = 'temp'
-        result_f = open(os.path.join(out_path, 'results_%s%d.txt' % (split, img_num)), 'w')
+        result_f = open(os.path.join(out_path, 'results_%s.txt' % exp_name), 'w')
+    if log_to_summary:
         summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
         summary_box = open('output/eval_refvg/summary_box.csv', 'a')
         summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
 
-        exp_str = out_path.split('/')[-1]
-        subset_summary_str = exp_str
     sample_num = len(stats['all'][1])
     for k, v in sorted(stats.items()):
         count = len(v[1])
@@ -170,11 +146,12 @@ def analyze_subset_stats(stats, out_path, split, img_num):
         mean_box_iou = np.mean(v[1])
         mean_mask_iou = np.mean(v[2])
         cum_mask_iou = np.sum(v[3]) * 1.0 / np.sum(v[4])
-        str = '\n%s: count=%d(%.4f), box_acc=%.4f, mean_box_iou=%.4f, mean_mask_iou=%.4f, cum_mask_iou=%.4f' \
+        s = '\n%s: count=%d(%.4f), box_acc=%.4f, mean_box_iou=%.4f, mean_mask_iou=%.4f, cum_mask_iou=%.4f' \
               % (k, count, count*1.0 / sample_num, box_acc, mean_box_iou, mean_mask_iou, cum_mask_iou)
-        print(str)
+        print(s)
         if out_path is not None:
-            result_f.write(str + '\n')
+            result_f.write(s + '\n')
+        if log_to_summary:
             subset_summary_str += ',%.4f' % mean_mask_iou
 
         box_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
@@ -182,7 +159,8 @@ def analyze_subset_stats(stats, out_path, split, img_num):
 
         pred_box_acc = {}
         pred_box_acc_str = 'pred_box_acc: '
-        box_sum_str = '%s,%.4f' % (exp_str, mean_box_iou)
+        box_sum_str = '%s,%.4f' % (exp_name, mean_box_iou)
+
         for thresh in box_threshs:
             pred_box_acc[thresh] = np.sum(np.array(v[1]) > thresh) * 1.0 / count
             pred_box_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_box_acc[thresh])
@@ -190,12 +168,12 @@ def analyze_subset_stats(stats, out_path, split, img_num):
         print(pred_box_acc_str)
         if out_path is not None:
             result_f.write(pred_box_acc_str + '\n')
-            if k == 'all':
-                summary_box.write(box_sum_str + '\n')
+        if log_to_summary and k == 'all':
+            summary_box.write(box_sum_str + '\n')
 
         pred_mask_acc = {}
         pred_mask_acc_str = 'pred_mask_acc: '
-        mask_sum_str = '%s,%.4f,%.4f' % (exp_str, mean_mask_iou, cum_mask_iou)
+        mask_sum_str = '%s,%.4f,%.4f' % (exp_name, mean_mask_iou, cum_mask_iou)
         for thresh in mask_threshs:
             pred_mask_acc[thresh] = np.sum(np.array(v[2]) > thresh) * 1.0 / count
             pred_mask_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_mask_acc[thresh])
@@ -203,148 +181,65 @@ def analyze_subset_stats(stats, out_path, split, img_num):
         print(pred_mask_acc_str)
         if out_path is not None:
             result_f.write(pred_mask_acc_str)
-            if k == 'all':
-                summary_mask.write(mask_sum_str + '\n')
+        if log_to_summary and k == 'all':
+            summary_mask.write(mask_sum_str + '\n')
 
         result = {'pred_box_acc': pred_box_acc, 'mean_box_iou': mean_box_iou,
                   'pred_mask_acc': pred_mask_acc, 'mean_mask_iou': mean_mask_iou, 'cum_mask_iou': cum_mask_iou,
                   'box_acc': box_acc}
         subset_results[k] = result
+
     if out_path is not None:
         result_f.close()
+    if log_to_summary:
         summary_mask.close()
         summary_box.close()
         summary_subset.write(subset_summary_str + '\n')
         summary_subset.close()
-    return subset_results
-
-
-def evaluate_per_cat(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=0,
-                     out_path='output/eval_refvg/temp'):
-    # initialize
-    if loader is None:
-        loader = RefVGLoader(split=split)
-        loader.shuffle()
-    if eval_img_count < 0:
-        eval_img_count = len(loader.img_ids)
-
-    stats = dict()
-    if out_path is not None:
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-
-    correct_count = 0
-    task_count = 0
-    for img_i, img_id in enumerate(predictions.keys()):
-
-        img_data = loader.get_img_ref_data(img_id)
-        for task_i, task_id in enumerate(img_data['task_ids']):
-            # predictions
-            if task_id not in predictions[img_id]:
-                continue
-            task_count += 1
-            pred = predictions[img_id][task_id]
-            correct = pred.get('correct', 0)
-            pred_boxes = pred.get('pred_boxes', [[0, 0, 1, 1]])
-            pred_mask_bin = pred.get('pred_mask', None)
-            if pred_mask_bin is None:
-                pred_mask = np.zeros((img_data['height'], img_data['width']))
-            else:
-                pred_mask = np.unpackbits(pred_mask_bin)[:img_data['height'] * img_data['width']]\
-                    .reshape((img_data['height'], img_data['width']))
-            can_boxes = pred.get('can_boxes', None)
-
-            # ground-truth
-            gt_boxes = img_data['gt_boxes'][task_i]
-            gt_Polygons = img_data['gt_Polygons'][task_i]
-            gt_polygons = []
-            for ps in gt_Polygons:
-                gt_polygons += ps
-
-            # compute stats
-            correct_count += correct
-            iou_pred_box = iou_boxes(pred_boxes, gt_boxes)
-            iou_pred_mask, i_pred_mask, u_pred_mask, gt_relative_size = iou_polygons_masks(gt_polygons, [pred_mask],
-                                                                                           iandu=True, gt_size=True)
-
-            # log subset stats, make visualizations
-            phrase = img_data['phrases'][task_i]
-            phrase_structure = img_data['p_structures'][task_i]
-            name = phrase_structure['name']
-
-            if name not in stats:
-                # stats for each cat: iou_pred_mask, gt_region_size, att_count, rel_count
-                stats[name] = [[], [], 0, 0]
-
-            stats[name][0].append(float(iou_pred_mask))
-            stats[name][1].append(float(gt_relative_size))
-            if phrase_structure['attributes'] is not None and len(phrase_structure['attributes']) > 0:
-                stats[name][2] += 1
-            if phrase_structure['relations'] is not None and len(phrase_structure['relations']) > 0:
-                stats[name][3] += 1
-
-        print('image[%d/%d] %d phrases.' % (img_i, eval_img_count, len(img_data['task_ids'])))
-
-        # if we've done enough images
-        if img_i + 1 == eval_img_count:
-            break
-    print('Stats:')
-    with open(os.path.join(out_path, 'cat_stats.csv'), 'w') as out_f:
-        for name, l in stats.items():
-            freq = loader.vg_loader.name_to_cnt.get(name, len(l[0]))
-            mean_iou = np.mean(np.array(l[0]))
-            mean_size = np.mean(np.array(l[1]))
-            s = '%s,%d,%.4f,%.4f,%d,%d' % (name, freq, mean_iou, mean_size, l[2], l[3])
-            print(s)
-            out_f.write(s + '\n')
-
     return
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--pred_name', type=str, help='name of the predictor to be evaluated: vg_pred, rand_vg_pred',
-                        default='ensemble_pred')
-    parser.add_argument('--pred_path', type=str, help='path to the prediction results. If None, run the predictor.',
-                        default='output/eval_refvg/rmi_pred_test0/test.npy')
-    parser.add_argument('--split', type=str, help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc',
-                        default='test')
-    parser.add_argument('--eval_img_count', type=int, help='number of images to evaluate. <=0 means the whole split',
-                        default=0)
-    parser.add_argument('--visualize_img_count', type=int, help='number of images to visualize per subset',
-                        default=0)
-    parser.add_argument('--subset', type=int, default=1, help='whether to enable subset analysis')
-    parser.add_argument('--save_pred', type=int, default=1, help='whether to save predictions to file.')
-
+    parser.add_argument('-n', '--pred_name', type=str, default='vg_pred', help='name of the predictor to be evaluated:'
+                                                                               'vg_gt, vg_rand, ins_rand')
+    parser.add_argument('-p', '--pred_path', type=str, default=None,
+                        help='path to the prediction results. If empty, run the predictor.')
+    parser.add_argument('-s', '--split', type=str, default='miniv',
+                        help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc')
+    parser.add_argument('-a', '--analyze_subset', type=int, default=1, help='whether to enable subset analysis')
+    parser.add_argument('-f', '--save_pred', type=int, default=1, help='whether to save evaluated predictions to file.')
+    parser.add_argument('-l', '--log_to_summary', type=int, default=1, help='whether to log results to the summary.')
     args = parser.parse_args()
 
-    # make other options
-    eval_path = 'output/eval_refvg/' + args.pred_name
-    if args.pred_name.startswith('det'):
-        eval_path += '_%.2f_%d_%s' % (args.det_score_thresh, args.det_max_can, args.det_sort_label)
-    if args.pred_name.startswith('ensemble'):
-        if len(args.ensemble_exp) > 0:
-            eval_path += '/ensemble_%s_%s%.2f' % (args.ensemble_exp, args.ensemble_thresh_by, args.ensemble_thresh)
-        else:
-            eval_path += '/ensemble_IN_%s_%s%.2f' % (args.ensemble_input, args.ensemble_thresh_by, args.ensemble_thresh)
-    eval_path += '_%s%d' % (args.split, args.eval_img_count)
     out_path = None
     if args.save_pred:
-        out_path = eval_path
-    if not args.pred_path or not os.path.exists(args.pred_path):
-        if args.pred_name == 'vg_gt':
-                predictions = vg_gt_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
-        elif args.pred_name == 'vg_rand':
-            predictions = vg_rand_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+        if args.pred_path is not None:
+            out_path = os.path.dirname(args.pred_path)
+        else:
+            out_path = os.path.join('output/eval_refvg', args.pred_name)
 
-        elif args.pred_name == 'ins_rand':
-            predictions = ins_rand_predictor(split=args.split, eval_img_count=args.eval_img_count, out_path=out_path)
+    if not args.pred_path or not os.path.exists(args.pred_path):
+        if args.pred_name.starts_with('vg_gt'):
+                predictions = vg_gt_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
+        elif args.pred_name.starts_with('vg_rand'):
+            predictions = vg_rand_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
+        elif args.pred_name.starts_with('ins_rand'):
+            predictions = ins_rand_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
         else:
             raise NotImplementedError
     else:
         predictions = np.load(args.pred_path).item()
 
-    evaluate(predictions=predictions, pred_name=args.pred_name, split=args.split, subset=args.subset,
-             eval_img_count=args.eval_img_count, visualize_img_count=args.visualize_img_count, out_path=eval_path)
+    evaluate(predictions=predictions, refvg_split=args.split, pred_name=args.pred_name, out_path=out_path,
+             analyze_subset=args.analyze_subset, log_to_summary=args.log_to_summary, save_pred=args.save_pred)
+    return
 
-    # evaluate_per_cat(predictions=predictions, pred_name=args.pred_name, split=args.split, out_path=eval_path)
+
+if __name__ == '__main__':
+    main()
+
+
+# Deprecated: See it in PhraseCutEnsemble
+# def evaluate_per_cat(predictions, loader=None, pred_name='rand_vg', split='val', subset=True, eval_img_count=0,
+#                      out_path='output/eval_refvg/temp'):

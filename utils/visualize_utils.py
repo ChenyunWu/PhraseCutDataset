@@ -1,9 +1,9 @@
-import StringIO
-
-import matplotlib.pyplot as plt
+# import StringIO
+# import requests
+import os
 import numpy as np
-import requests
 from PIL import Image
+import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Polygon
 
 plt.switch_backend('agg')
@@ -21,9 +21,10 @@ visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darko
                     'pred_mask': 'GnBu', 'can_boxes': 'darkcyan'}
 
 
-def visualize_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5, gt_mask=None, gt_Polygons=None,
-                    gt_polygons=None, gt_boxes=None, gt_all_boxes=None, vg_boxes=None, vg_all_boxes=None,
-                    pred_boxes=None, pred_mask=None, can_boxes=None, set_colors=None, xywh=True, cbar=None):
+def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
+               gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
+               vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, can_boxes=None,
+               set_colors=None, xywh=True, cbar=None):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
@@ -70,8 +71,9 @@ def visualize_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None,
         if img_id:
             img = Image.open('data/refvg/images/%d.jpg' % img_id)
         else:
-            response = requests.get(img_url, verify=False)
-            img = Image.open(StringIO(response.content))
+            raise NotImplementedError
+            # response = requests.get(img_url, verify=False)
+            # img = Image.open(StringIO(response.content))
     ax.imshow(img)
 
     if not xywh:
@@ -134,10 +136,12 @@ def visualize_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None,
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=0.2)
         if cbar == 'pred':
+            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=0.2)
             cb = fig.colorbar(p, ax=ax, format='%.2f')
             cb.ax.tick_params(labelsize=4)
+        else:
+            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
 
     # ax.set_frame_on(False)
     # ax.set_yticklabels([])
@@ -145,3 +149,41 @@ def visualize_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None,
     ax.set_axis_off()
 
     return
+
+
+def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'):
+    img_id = img_data['image_id']
+    fig_h = img_data['height'] / 300
+    fig_w = img_data['width'] / 300
+    fig_name = '%s_%s.jpg' % (img_id, task_id)
+    fig_path = os.path.join(out_path, fig_name)
+    if os.path.exists(fig_path):
+        return False
+    fig = plt.figure(figsize=[fig_w, fig_h])
+    ax = fig.add_subplot(111)
+    task_i = img_data['task_ids'].index(task_id)
+    gt_Polygons = img_data['gt_Polygons'][task_i]
+    plot_refvg(ax, fig, img_id=img_id, gt_Polygons=gt_Polygons)
+    ax.axes.get_xaxis().set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+    ax.set_frame_on(False)
+    plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    return True
+
+
+def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_mask=None, can_boxes=None):
+    img_id = img_data['image_id']
+    fig_h = img_data['height'] / 300
+    fig_w = img_data['width'] / 300
+    fig_name = '%s_%s.jpg' % (img_id, task_id)
+    fig_path = os.path.join(out_path, fig_name)
+    if os.path.exists(fig_path):
+        return False
+    fig = plt.figure(figsize=[fig_w, fig_h])
+    ax = fig.add_subplot(111)
+    plot_refvg(ax, fig, img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask, can_boxes=can_boxes)
+    ax.axes.get_xaxis().set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+    ax.set_frame_on(False)
+    plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    return True
