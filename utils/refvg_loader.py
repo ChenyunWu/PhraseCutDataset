@@ -122,9 +122,9 @@ class RefVGLoader:
         img_ins_boxes = self.ImgInsBoxes[img_id]
         img_ins_Polygons = self.ImgInsPolygons[img_id]
         for task in self.ImgReferTasks[img_id]:
-            for i in task['ann_ids']:
-                if i not in img_ann_ids:
-                    print('ann_id not in vg_pp: %s' % i)
+            # for i in task['ann_ids']:
+                # if i not in img_ann_ids:
+                #     print('ann_id not in vg_pp: %s' % i)
             task_ann_ids = [i for i in task['ann_ids'] if i in img_ann_ids]
             vg_ann_ids.append(task_ann_ids)
             vg_ann_id_set.update(task_ann_ids)

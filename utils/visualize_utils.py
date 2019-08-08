@@ -141,12 +141,12 @@ def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, font
             cb = fig.colorbar(p, ax=ax, format='%.2f')
             cb.ax.tick_params(labelsize=4)
         else:
-            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
+            ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
 
-    # ax.set_frame_on(False)
-    # ax.set_yticklabels([])
-    # ax.set_xticklabels([])
+    # ax.axes.get_xaxis().set_visible(False)
+    # ax.axes.get_yaxis().set_visible(False)
     ax.set_axis_off()
+    ax.set_frame_on(False)
 
     return
 
@@ -155,7 +155,7 @@ def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
-    fig_name = '%s_%s.jpg' % (img_id, task_id)
+    fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path):
         return False
@@ -164,10 +164,8 @@ def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
     plot_refvg(ax, fig, img_id=img_id, gt_Polygons=gt_Polygons)
-    ax.axes.get_xaxis().set_visible(False)
-    ax.axes.get_yaxis().set_visible(False)
-    ax.set_frame_on(False)
-    plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
     return True
 
 
@@ -175,15 +173,29 @@ def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_ma
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
-    fig_name = '%s_%s.jpg' % (img_id, task_id)
+    fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path):
         return False
     fig = plt.figure(figsize=[fig_w, fig_h])
     ax = fig.add_subplot(111)
     plot_refvg(ax, fig, img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask, can_boxes=can_boxes)
-    ax.axes.get_xaxis().set_visible(False)
-    ax.axes.get_yaxis().set_visible(False)
-    ax.set_frame_on(False)
-    plt.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+    return True
+
+
+def score_visualize_to_file(img_data, task_id, out_path, score_mask):
+    img_id = img_data['image_id']
+    fig_h = img_data['height'] / 300
+    fig_w = img_data['width'] / 300 + 0.5
+    fig_name = '%s.jpg' % task_id
+    fig_path = os.path.join(out_path, fig_name)
+    if os.path.exists(fig_path):
+        return False
+    fig = plt.figure(figsize=[fig_w, fig_h])
+    ax = fig.add_subplot(111)
+    plot_refvg(ax, fig, img_id=img_id, pred_mask=score_mask, cbar='pred')
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
     return True

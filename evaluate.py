@@ -115,7 +115,7 @@ def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='tem
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     if save_pred:
-        pred_path = os.path.join(out_path, 'pred-eval_%s.npy' % exp_name)
+        pred_path = os.path.join(out_path, 'pred-eval.npy')
         np.save(pred_path, predictions)
     print('Start to analyze %s:' % exp_name)
     analyze_subset_stats(stats, exp_name, out_path, log_to_summary)
@@ -130,7 +130,7 @@ def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
     summary_subset = None
     subset_summary_str = exp_name
     if out_path is not None:
-        result_f = open(os.path.join(out_path, 'results_%s.txt' % exp_name), 'w')
+        result_f = open(os.path.join(out_path, 'results.txt'), 'w')
     if log_to_summary:
         summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
         summary_box = open('output/eval_refvg/summary_box.csv', 'a')

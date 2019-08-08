@@ -20,23 +20,23 @@ from utils.visualize_utils import gt_visualize_to_file, pred_visualize_to_file
 from utils.refvg_loader import RefVGLoader
 
 
-def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, html_path=None, pred_plot_path=None,
-              gt_plot_path='data/refvg/visualizations', result_path=None, refvg_loader=None, refvg_split='miniv',
+def visualize(pred_eval_dict, out_path, gt_plot_path='data/refvg/visualizations', refvg_loader=None, refvg_split=None,
               all_task_num=200, subset_task_num=0, verbose=True):
-    # prepare
-    if not os.path.exists(pred_plot_path):
-        os.makedirs(pred_plot_path)
-    if not os.path.exists(gt_plot_path):
-        os.makedirs(gt_plot_path)
+    # prepare paths
+    html_path = os.path.join(out_path, 'htmls')
     if not os.path.exists(html_path):
         os.makedirs(html_path)
+    path_dict = dict()
+    for exp_name, pred_eval in pred_eval_dict.items():
+        exp_path = os.path.join(out_path, exp_name)
+        result_path = os.path.join(exp_path, 'results.txt')
+        pred_plot_path = os.path.join(exp_path, 'pred_plots')
+        path_dict[exp_name] = [result_path, pred_plot_path]
+        if not os.path.exists(pred_plot_path):
+            os.makedirs(pred_plot_path)
+        if not os.path.exists(gt_plot_path):
+            os.makedirs(gt_plot_path)
 
-    if pred_eval is not None:
-        predictions = pred_eval
-    else:
-        predictions = np.load(pred_eval_path).item()
-        exp_name = os.path.basename(pred_eval_path)[10:-4]  # 'pred-eval_%s.npy' % exp_name
-    assert isinstance(predictions, dict)
     if refvg_loader is None:
         refvg_loader = RefVGLoader(split=refvg_split)
 
@@ -47,7 +47,7 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, html_path=No
     subset_dict = dict()
     for s in subsets:
         subset_dict[s] = list()
-    for img_id, img_pred in predictions.items():
+    for img_id, img_pred in pred_eval_dict.values()[0].items():  # assert all predictions consist same tasks
         for task_id, pred in img_pred.items():
             assert 'subsets' in pred
             for subset in pred['subsets']:
@@ -68,24 +68,22 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, html_path=No
         # generate plots (if not already there)
         for i, (img_id, task_id) in enumerate(img_task_ids):
             img_data = refvg_loader.get_img_ref_data(img_id)
-            pred_mask = pred_eval[img_id][task_id]['pred_mask']
-            pred_mask = np.unpackbits(pred_mask)[:img_data['height'] * img_data['width']] \
-                .reshape((img_data['height'], img_data['width']))
-            g1 = gt_visualize_to_file(img_data, task_id, out_path=gt_plot_path)
-            g2 = pred_visualize_to_file(img_data, task_id, pred_mask=pred_mask, out_path=pred_plot_path)
-            if verbose:
-                print(i, g1, g2)
+            for exp_name, pred_eval in pred_eval_dict:
+                pred_mask = pred_eval[img_id][task_id]['pred_mask']
+                pred_mask = np.unpackbits(pred_mask)[:img_data['height'] * img_data['width']] \
+                    .reshape((img_data['height'], img_data['width']))
+                g1 = gt_visualize_to_file(img_data, task_id, out_path=gt_plot_path)
+                g2 = pred_visualize_to_file(img_data, task_id, pred_mask=pred_mask, out_path=path_dict[exp_name][1])
+                if verbose:
+                    print('img %d exp %s: gt plot - %s, pred plot - %s' % (i, exp_name, g1, g2))
 
         # html parameters
         gt_rel_path = os.path.relpath(gt_plot_path, start=html_path)
-        pred_rel_path = os.path.relpath(pred_plot_path, start=html_path)
-        result_rel_path = None
-        if result_path:
-            result_rel_path = os.path.relpath(result_path, start=html_path)
+        out_rel_path = os.path.relpath(out_path, start=html_path)
         # save html to file
-        html_str = generate_html(exp_name, subset, img_task_ids, predictions, refvg_loader,
-                                 gt_rel_path, pred_rel_path, result_rel_path)
-        html_name = '%s_%s_%s(%s).html' % (exp_name, subset, len(img_task_ids), total_num)
+        html_str = generate_html(subset, img_task_ids, pred_eval_dict, refvg_loader,
+                                 gt_rel_path, out_rel_path)
+        html_name = '%s_%s(%s).html' % (subset, len(img_task_ids), total_num)
         with open(os.path.join(html_path, html_name), 'w') as f:
             f.write(html_str)
         if verbose:
@@ -93,8 +91,8 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, html_path=No
     return
 
 
-def generate_html(exp_name, subset, img_task_ids, pred, refvg_loader, gt_rel_path, pred_rel_path, result_rel_path):
-    title = '%s:%s:%d' % (subset, exp_name, len(img_task_ids))
+def generate_html(subset, img_task_ids, pred_dict, refvg_loader, gt_rel_path, out_rel_path):
+    title = '%s:%d' % (subset, len(img_task_ids))
     html_str = '''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,9 +104,8 @@ def generate_html(exp_name, subset, img_task_ids, pred, refvg_loader, gt_rel_pat
 <h3>Predictions: %s</h3>
 <h3>Subset: %s </h3>
 <h3>Visualization count: %d</h3>
-<h3>Left: ground-truth; Right: prediction</h3>
 <hr>
-''' % (title, exp_name, subset, len(img_task_ids))
+''' % (title, '; '.join(pred_dict.keys()), subset, len(img_task_ids))
 
     if result_rel_path is not None:
         html_str += '<h3>Results</h3><object data="' + result_rel_path + '" width="800" height="800">' \
@@ -167,9 +164,8 @@ def main():
     if args.result_path is None:
         args.result_path = os.path.join(parent_dir, 'results_%s.txt' % exp_name)
 
-    visualize(None, 'vg_gt', pred_eval_path=args.pred_path, html_path=args.out_path, pred_plot_path=args.pred_plot_path,
-              gt_plot_path=args.gt_plot_path, result_path=args.result_path, refvg_split=args.split,
-              all_task_num=args.all_task_num, subset_task_num=args.sub_task_num, verbose=True)
+    visualize(None, 'vg_gt', pred_eval_path=args.pred_path, exp_path=args.out_path, gt_plot_path=args.gt_plot_path,
+              refvg_split=args.split, all_task_num=args.all_task_num, subset_task_num=args.sub_task_num, verbose=True)
     return
 
 

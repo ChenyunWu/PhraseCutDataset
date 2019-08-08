@@ -23,7 +23,7 @@ class PhraseList(object):
             cat_to_ix = vg_loader.name_to_ix
             cat_labels = list()
             for pst in phrase_structures:
-                cat_labels.append(cat_to_ix.get(pst['name'], len(cat_to_ix)) + 1)
+                cat_labels.append(cat_to_ix.get(pst['name'], -1) + 1)  # [UNK] as label 0
             self.cat_labels = torch.tensor(np.array(cat_labels))
 
             if vg_loader.word_embed is not None and max_phrase_len > 0:
