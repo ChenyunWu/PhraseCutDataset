@@ -21,15 +21,16 @@ visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darko
                     'pred_mask': 'GnBu', 'can_boxes': 'darkcyan'}
 
 
-def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
+def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
                gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
                vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, can_boxes=None,
                set_colors=None, xywh=True, cbar=None):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
-    :param ax: required
+    :param ax:
     :param fig: only needed for creating color bar
+    :param fig_size: if both ax and fig are None, create ax and fig by this size
     :param img: PIL image
     :param img_id: if > 0, get img from local path
     :param img_url: if img_id<=0, get img from this url. Must set one of img, img_id or img_url
@@ -48,7 +49,7 @@ def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, font
     :param set_colors: change default color by a dict
     :param xywh: whether input boxes are xywh or xyxy
     :param cbar: which color bar to show. None, 'gt', 'pred', only used when gt_mask / pred_mask is provided
-    :return: Nothing
+    :return: fig
     """
     def modify_color(d):
         colors = visualize_colors
@@ -62,18 +63,27 @@ def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, font
 
     if img_id < 0 and img_url is None and img is None:
         return
+    if ax is None and fig is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+        ax.set_frame_on(False)
+        # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        fig.add_axes(ax)
 
-    if title:
+    if title is not None:
         ax.set_title(title, color=colors['title'], fontsize=fontsize)
 
     # show img
     if img is None:
-        if img_id:
+        if img_id >= 0:
             img = Image.open('data/refvg/images/%d.jpg' % img_id)
+        # elif img_url is not None:
+        #     response = requests.get(img_url, verify=False)
+        #     img = Image.open(StringIO(response.content))
         else:
             raise NotImplementedError
-            # response = requests.get(img_url, verify=False)
-            # img = Image.open(StringIO(response.content))
+
     ax.imshow(img)
 
     if not xywh:
@@ -96,7 +106,7 @@ def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, font
         p = ax.imshow(masked, colors['gt_mask'], interpolation='none', alpha=0.5, vmin=0, vmax=1.0)
         if cbar == 'gt':
             cb = fig.colorbar(p, ax=ax, format='%.1f')
-            cb.ax.tick_params(labelsize=5)
+            # cb.ax.tick_params(labelsize=5)
     elif gt_Polygons is not None:
         for ins_i, ins_ps in enumerate(gt_Polygons):
             if color == 'colorful':
@@ -139,16 +149,11 @@ def plot_refvg(ax, fig=None, img=None, img_id=-1, img_url=None, title=None, font
         if cbar == 'pred':
             p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=0.2)
             cb = fig.colorbar(p, ax=ax, format='%.2f')
-            cb.ax.tick_params(labelsize=4)
+            # cb.ax.tick_params(labelsize=4)
         else:
             ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
 
-    # ax.axes.get_xaxis().set_visible(False)
-    # ax.axes.get_yaxis().set_visible(False)
-    ax.set_axis_off()
-    ax.set_frame_on(False)
-
-    return
+    return fig
 
 
 def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'):
@@ -159,11 +164,9 @@ def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'
     fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path):
         return False
-    fig = plt.figure(figsize=[fig_w, fig_h])
-    ax = fig.add_subplot(111)
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
-    plot_refvg(ax, fig, img_id=img_id, gt_Polygons=gt_Polygons)
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons)
     fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     return True
@@ -177,10 +180,9 @@ def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_ma
     fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path):
         return False
-    fig = plt.figure(figsize=[fig_w, fig_h])
-    ax = fig.add_subplot(111)
-    plot_refvg(ax, fig, img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask, can_boxes=can_boxes)
-    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
+                     can_boxes=can_boxes)
+    fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     return True
 
@@ -188,14 +190,12 @@ def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_ma
 def score_visualize_to_file(img_data, task_id, out_path, score_mask):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
-    fig_w = img_data['width'] / 300 + 0.5
+    fig_w = img_data['width'] / 300 * 1.25
     fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path):
         return False
-    fig = plt.figure(figsize=[fig_w, fig_h])
-    ax = fig.add_subplot(111)
-    plot_refvg(ax, fig, img_id=img_id, pred_mask=score_mask, cbar='pred')
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar='pred')
     fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     return True
