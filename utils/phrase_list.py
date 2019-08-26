@@ -40,7 +40,7 @@ class PhraseList(object):
         return len(self.phrases)
 
 
-def phrase_lists_cat_field(phrase_lists, field='phrase_word_labels'):
+def phrase_lists_cat_field(phrase_lists, field):
     if field in ['phrase_word_labels', 'cat_labels']:
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)

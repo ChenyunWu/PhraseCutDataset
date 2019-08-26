@@ -20,8 +20,17 @@ from utils.refvg_loader import RefVGLoader
 
 def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=None,
               gt_plot_path='data/refvg/visualizations', refvg_loader=None, refvg_split=None,
-              all_task_num=200, subset_task_num=0, verbose=True):
+              all_task_num=400, subset_task_num=200, verbose=True):
     # prepare
+    if pred_eval is not None:
+        predictions = pred_eval
+    else:
+        predictions = np.load(pred_eval_path).item()
+        exp_name = pred_eval_path.split('/')[-2]  # 'out_path/{exp_name}/pred_eval.npy'
+    assert isinstance(predictions, dict)
+    if refvg_loader is None:
+        refvg_loader = RefVGLoader(split=refvg_split)
+
     html_path = os.path.join(out_path, 'htmls')
     pred_plot_path = os.path.join(out_path, 'pred_plots')
     if not os.path.exists(html_path):
@@ -34,21 +43,12 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=Non
     result_path = os.path.join(out_path, 'results.txt')
     result_enabled = os.path.exists(result_path)
 
-    score_plot_enabled = 'pred_scores' in pred_eval.values()[0].values()[0]
+    score_plot_enabled = 'pred_scores' in predictions.values()[0].values()[0]
     score_plot_path = None
     if score_plot_enabled:
         score_plot_path = os.path.join(out_path, 'score_plots')
         if not os.path.exists(score_plot_path):
             os.makedirs(score_plot_path)
-
-    if pred_eval is not None:
-        predictions = pred_eval
-    else:
-        predictions = np.load(pred_eval_path).item()
-        exp_name = pred_eval_path.split('/')[-2]  # 'out_path/{exp_name}/pred_eval.npy'
-    assert isinstance(predictions, dict)
-    if refvg_loader is None:
-        refvg_loader = RefVGLoader(split=refvg_split)
 
     if subset_task_num > 0:
         subsets = subset_utils.subsets
@@ -78,14 +78,14 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=Non
         # generate plots (if not already there)
         for i, (img_id, task_id) in enumerate(img_task_ids):
             img_data = refvg_loader.get_img_ref_data(img_id)
-            pred_mask = pred_eval[img_id][task_id]['pred_mask']
+            pred_mask = predictions[img_id][task_id]['pred_mask']
             pred_mask = np.unpackbits(pred_mask)[:img_data['height'] * img_data['width']] \
                 .reshape((img_data['height'], img_data['width']))
             g1 = gt_visualize_to_file(img_data, task_id, out_path=gt_plot_path)
             g2 = pred_visualize_to_file(img_data, task_id, pred_mask=pred_mask, out_path=pred_plot_path)
             g3 = False
-            if 'pred_scores' in pred_eval[img_id][task_id]:
-                score_mask = pred_eval[img_id][task_id]['pred_scores']
+            if 'pred_scores' in predictions[img_id][task_id]:
+                score_mask = predictions[img_id][task_id]['pred_scores']
                 g3 = score_visualize_to_file(img_data, task_id, score_mask=score_mask, out_path=score_plot_path)
             if verbose:
                 print('img %d exp %s: gt plot - %s, pred plot - %s, score plot - %s' % (i, exp_name, g1, g2, g3))
@@ -174,16 +174,16 @@ def main():
                         help='path to saved gt plots')
     parser.add_argument('-s', '--split', type=str, default='miniv',
                         help='dataset split to visualize: val, miniv, test, train, val_miniv, etc')
-    parser.add_argument('-n', '--all_task_num', type=int, default=20,
+    parser.add_argument('-n', '--all_task_num', type=int, default=400,
                         help='Maximum number of tasks to visualize for "all"')
-    parser.add_argument('-m', '--sub_task_num', type=int, default=10,
+    parser.add_argument('-m', '--sub_task_num', type=int, default=200,
                         help='Maximum number of tasks to visualize for each subset')
     args = parser.parse_args()
 
     if args.out_path is None:
         args.out_path = os.path.dirname(args.pred_path)
 
-    visualize(None, 'temp', pred_eval_path=args.pred_path, out_path=args.out_path, gt_plot_path=args.gt_plot_path,
+    visualize(None, 'imp_eval', pred_eval_path=args.pred_path, out_path=args.out_path, gt_plot_path=args.gt_plot_path,
               refvg_split=args.split, all_task_num=args.all_task_num, subset_task_num=args.sub_task_num, verbose=True)
     return
 

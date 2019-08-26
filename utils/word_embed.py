@@ -2,7 +2,7 @@ import numpy as np
 
 
 class WordEmbed:
-    def __init__(self, lookup_path='data/fast_text/lookup_vgpp_tv_rca.npy', vocab_size=-1, word_freq_thresh=1000,
+    def __init__(self, lookup_path='data/fast_text/lookup_refvg_all.npy', vocab_size=-1, word_freq_thresh=0,
                  init_embed='fast_text'):
 
         lookup = np.load(lookup_path).item()

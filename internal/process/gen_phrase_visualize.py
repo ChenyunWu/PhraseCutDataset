@@ -57,12 +57,12 @@ def visualize_imgs(loader, imgs, sample_count=0):
                     axes[i, 0].add_patch(Rectangle((x, y), w, h, fill=False, edgecolor='salmon', linewidth=0.6))
 
             if d_i < 25:
-                ref_phrase= data['phrase']
+                ref_phrase = data['phrase']
                 structure = data['phrase_structure']
                 mode = structure['type']
-                clues = loader.gen_language_clue_str(loader.Anns[data['ann_ids'][0]])
+                clues = loader.phrase_struct_to_str(loader.Anns[data['ann_ids'][0]])
                 ref_phrases += ref_phrase + ' | ' + clues + ' (' + mode + ')\n'
-        if len(ann_ids) >25:
+        if len(ann_ids) > 25:
             ref_phrases += '...'
 
         axes[i, 2].text(x=0.01, y=0.01, s=ref_phrases, style='italic', size='xx-small')
@@ -121,7 +121,7 @@ def gen_phrases(loader, imgs, sample_count=0):
     return dataset
 
 
-# self.Anns[obj['object_id']] = {'ann_id': obj['object_id'], 'image_id': img['image_id'],
+# self.objects[obj['object_id']] = {'ann_id': obj['object_id'], 'image_id': img['image_id'],
 #                                'box': [obj['x'], obj['y'], obj['w'], obj['h']],
 #                                'names': obj['names'],
 #                                'attributes': attributes,
@@ -165,7 +165,7 @@ def sample_img_anns(loader, img_id, max_count=20):
     same_types = np.zeros([len(f_ann_ids)] * 2)
     for i, id1 in enumerate(f_ann_ids):
         for j, id2 in enumerate(f_ann_ids[i+1:]):
-            if loader.is_same_type(loader.Anns[id1], loader.Anns[id2]):
+            if loader.is_same_category(loader.Anns[id1], loader.Anns[id2]):
                 same_types[i, j] = same_types[j, i] = 1
     # no same type: directly sample all
     if np.sum(same_types) == 0:
@@ -215,15 +215,15 @@ def main(args):
 
     loader = VGLoader()
 
-    # val_images = [img for img in loader.Images.values() if img['split'] == 'val']
+    # val_images = [img for img in loader.images.values() if img['split'] == 'val']
     # visualize_imgs(loader, random.sample(val_images, 20))
     # dataset = gen_phrases(loader, val_images)
     # with open('data/refvg/phrases_val1000_temp.json', 'w') as f:
     #     json.dump(dataset, f)
     train_imgs = [img for img in loader.Images.values() if img['split'] == 'train']
     s_imgs = random.sample(train_imgs, 40)
-    # if 1593062 in loader.Images:
-    #     s_imgs = [loader.Images[1593062]] + s_imgs
+    # if 1593062 in loader.images:
+    #     s_imgs = [loader.images[1593062]] + s_imgs
     visualize_imgs(loader, s_imgs, sample_count=6)
     dataset = gen_phrases(loader, train_imgs, sample_count=6)
     # with open('data/refvg/phrases_train1000.json', 'w') as f:

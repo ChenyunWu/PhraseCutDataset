@@ -59,7 +59,7 @@ class RefVGLoader:
                 task['ins_box_ixs'] = range(len(task['instance_boxes']))
 
         print('RefVGLoader spliting img_ids')
-        self.img_ids = [img_id for img_id, img in self.vg_loader.Images.items()
+        self.img_ids = [img_id for img_id, img in self.vg_loader.images.items()
                         if img['split'] in ss and img_id in loaded_img_ids]
         self.img_ids.sort()
         self.iterator = 0
@@ -112,13 +112,13 @@ class RefVGLoader:
             self.iterator = ri_next
             img_id = self.img_ids[ri]
 
-        vg_img = self.vg_loader.Images[img_id]
+        vg_img = self.vg_loader.images[img_id]
         vg_ann_id_set = set()
         vg_ann_ids = []
         vg_boxes = []
 
         img_ann_ids = vg_img['ann_ids']
-        img_vg_boxes = [self.vg_loader.Anns[ann_id]['box'] for ann_id in img_ann_ids]
+        img_vg_boxes = [self.vg_loader.objects[ann_id]['box'] for ann_id in img_ann_ids]
         img_ins_boxes = self.ImgInsBoxes[img_id]
         img_ins_Polygons = self.ImgInsPolygons[img_id]
         for task in self.ImgReferTasks[img_id]:
@@ -128,7 +128,7 @@ class RefVGLoader:
             task_ann_ids = [i for i in task['ann_ids'] if i in img_ann_ids]
             vg_ann_ids.append(task_ann_ids)
             vg_ann_id_set.update(task_ann_ids)
-            vg_boxes.append([self.vg_loader.Anns[ann_id]['box'] for ann_id in task_ann_ids])
+            vg_boxes.append([self.vg_loader.objects[ann_id]['box'] for ann_id in task_ann_ids])
 
         phrases = []
         task_ids = []
