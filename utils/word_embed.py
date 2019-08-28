@@ -4,8 +4,7 @@ import numpy as np
 class WordEmbed:
     def __init__(self, lookup_path='data/fast_text/lookup_refvg_all.npy', vocab_size=-1, word_freq_thresh=0,
                  init_embed='fast_text'):
-
-        lookup = np.load(lookup_path).item()
+        lookup = np.load(lookup_path, allow_pickle=True).item()
         end_ix = len(lookup['ix_to_word'])  # word[end_ix] is excluded from vocab
         if vocab_size > 0:
             end_ix = min(vocab_size, end_ix)
@@ -20,10 +19,9 @@ class WordEmbed:
         self.ix_to_word = lookup['ix_to_word'][:end_ix]
         self.word_to_ix = {word: ix for ix, word in enumerate(self.ix_to_word)}
         self.vocab_size = end_ix
-
         print('vocabulary size: %d; minimum word frequency: %d' % (end_ix, lookup['freq'][end_ix - 1]))
 
-        if init_embed =='fast_text':
+        if init_embed == 'fast_text':
             self.embeddings = lookup['embeddings'][:end_ix]
         elif init_embed == 'random':
             self.embeddings = np.random.randn(end_ix, 300)

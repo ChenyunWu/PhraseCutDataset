@@ -23,79 +23,57 @@ from .iou import iou_box
 
 class VGLoader(object):
 
-    def __init__(self, word_embed=None, split=None, obj_filter=True, phrase_length=10, name_count_top=1272,
-                 att_count_top=593, rel_count_top=126, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
-
-        # self.word_to_ix = self.info['word_to_ix']
-        # self.ix_to_word = {ix: wd for wd, ix in self.word_to_ix.items()}
-        # print('vocab size is ', self.vocab_size)
-        # self.cat_to_ix = self.info['cat_to_ix']
-        # self.ix_to_cat = {ix: cat for cat, ix in self.cat_to_ix.items()}
-        # print('object cateogry size is ', len(self.ix_to_cat))
+    def __init__(self, split=None, word_embed=None, phrase_length=10, cat_count_thresh=21, att_count_thresh=21,
+                 rel_count_thresh=21, obj_filter=True, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
 
         self.word_embed = word_embed
         self.phrase_length = phrase_length
+        # used in filtering objects (if obj_filter=True)
         self.obj_size_thresh = obj_size_thresh
         self.iou_st_thresh = iou_st_thresh
         self.iou_dt_thresh = iou_dt_thresh
+        # only used in generating phrases
         self.phrase_type_stat = {'name': 0, 'attribute': 0, 'relation': 0, 'location': 0, 'verbose': 0}
 
-        # load the json files which contains info about the dataset
+        # load cat/att/rel count data
+        print('Loader loading name_att_rel_count_amt.json')
+        with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
+            count_info = json.load(f)
+            cat_count = count_info['name']
+            att_count = count_info['att']
+            rel_count = count_info['rel']
+
+        # prepare category(names)
+        self.cat_to_cnt = {k: v for k, v in cat_count.items() if v >= cat_count_thresh}
+        self.ix_to_cat = [k for (k, v) in sorted(self.cat_to_cnt.items(), key=lambda kv: -kv[1])]
+        self.cat_to_ix = {cat: ix for ix, cat in enumerate(self.ix_to_cat)}
+        print('Number of categories: %d / %d, frequency thresh: %d'
+              % (len(self.ix_to_cat), len(cat_count), cat_count_thresh))
+
+        # prepare attributes
+        self.att_to_cnt = {k: v for k, v in att_count.items() if v >= att_count_thresh}
+        self.ix_to_att = [k for (k, v) in sorted(self.att_to_cnt.items(), key=lambda kv: -kv[1])]
+        self.att_to_ix = {att: ix for ix, att in enumerate(self.ix_to_att)}
+        print('Number of attributes: %d / %d, frequency thresh: %d'
+              % (len(self.ix_to_att), len(att_count), att_count_thresh))
+
+        # prepare relationships
+        self.rel_to_cnt = {k: v for k, v in rel_count.items() if v >= rel_count_thresh}
+        self.ix_to_rel = [k for (k, v) in sorted(self.rel_to_cnt.items(), key=lambda kv: -kv[1])]
+        self.rel_to_ix = {rel: ix for ix, rel in enumerate(self.ix_to_rel)}
+        print('Number of relationships: %d / %d, frequency thresh: %d'
+              % (len(self.ix_to_rel), len(rel_count), rel_count_thresh))
+
+        # load the image split data
         print('Loader loading image_data_split3000.json')
         with open('data/refvg/image_data_split3000.json', 'r') as f:
             imgs_info = json.load(f)
             self.info_dict = {img['image_id']: img for img in imgs_info}
 
-        print('Loader loading name_att_rel_count_amt.json')
-        with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
-
-            count_info = json.load(f)
-            name_count = count_info['name']
-            att_count = count_info['att']
-            rel_count = count_info['rel']
-
-        name_count_sorted = name_count.values()
-        name_count_sorted.sort()
-        self.name_count_thresh = name_count_sorted[-name_count_top]
-        self.name_num = len(name_count_sorted) - name_count_sorted.index(self.name_count_thresh)
-        print('Number of categories: %d / %d, frequency thresh: %d'
-              % (self.name_num, len(name_count), self.name_count_thresh))
-        self.name_to_cnt = {k: v for k, v in name_count.items() if v >= self.name_count_thresh}
-        self.ix_to_name = self.name_to_cnt.keys()
-        # self.ix_to_name = [k for (k, v) in sorted(self.name_to_cnt.items(), key=lambda kv: -kv[1])]
-        # print('top 10 cat: ' + ';'.join(self.ix_to_name[:10]))
-        self.name_to_ix = {name: ix for ix, name in enumerate(self.ix_to_name)}
-        cnt_rank = sorted(self.name_to_cnt.items(), key=lambda kv: -kv[1])
-        self.name_to_cnt_rank = {n: i for i, (n, c) in enumerate(cnt_rank)}
-        self.names_sorted = [n for (n, c) in cnt_rank]
-
-        # prepare attributes
-        att_count_sorted = att_count.values()
-        att_count_sorted.sort()
-        self.att_count_thresh = att_count_sorted[-att_count_top]
-        self.att_num = len(att_count_sorted) - att_count_sorted.index(self.att_count_thresh)
-        print('Number of valid unique attributes: %d / %d, frequency thresh: %d'
-              % (self.att_num, len(att_count), self.att_count_thresh))
-        self.att_to_cnt = {k: v for k, v in att_count.items() if v >= self.att_count_thresh}
-        self.ix_to_att = self.att_to_cnt.keys()
-        self.att_to_ix = {att: ix for ix, att in enumerate(self.ix_to_att)}
-
-        rel_count_sorted = rel_count.values()
-        rel_count_sorted.sort()
-        self.rel_count_thresh = rel_count_sorted[-rel_count_top]
-        self.rel_num = len(rel_count_sorted) - rel_count_sorted.index(self.rel_count_thresh)
-        print('Number of valid unique relation predicates: %d / %d, frequency thresh: %d'
-              % (self.rel_num, len(rel_count), self.rel_count_thresh))
-
+        # load scene graph data
         if not split:
             split = 'train_val_test_miniv'
-        
         print('split: %s' % split)
-        
-        # print('Loader loading scene_graphs_pp.json')
-        # with open('data/refvg/scene_graphs_pp.json', 'r') as f:
-        #     self.images = json.load(f)
-        # else:
         ss = split.split('_')
         images = []
         for s in ss:
@@ -103,10 +81,11 @@ class VGLoader(object):
             with open('data/refvg/scene_graphs_pp_%s.json' % s, 'r') as f:
                 images += json.load(f)
                 
+        # organize loaded img/obj data
         self.relations = []
         self.objects = dict()
         self.images = dict()
-        obj_ids = []
+        # obj_ids = []  # deprecated. Used when we cache all object features into h5 files
         for img in images:
             img['file_name'] = '%d.jpg' % img['image_id']
             img_info = self.info_dict[img['image_id']]
@@ -114,35 +93,34 @@ class VGLoader(object):
             img['height'] = img_info['height']
             img['split'] = img_info['split']
             self.images[img['image_id']] = img
-            obj_ids += [obj['object_id'] for obj in img['objects']]
+            # obj_ids += [obj['object_id'] for obj in img['objects']]
 
-            # to match the I/O for refCOCOx
+            # filter objects
             if obj_filter:
                 f_objects, f_relations = self.filter_objects(img_info, img['objects'], img['relationships'])
-            else:
-                f_objects = img['objects']
-                f_relations = img['relationships']
-            img['ann_ids'] = [obj['object_id'] for obj in f_objects]
-            self.relations += f_relations
-            for obj in f_objects:
-                # COCO anns: list of {ann_id, category_id, image_id, box, h5_id}
+                img['objects'] = f_objects
+                img['relationships'] = f_relations
+
+            img['obj_ids'] = [obj['object_id'] for obj in img['objects']]
+            self.relations += img['relationships']
+            for obj in img['objects']:
                 attributes = []
                 if 'attributes' in obj:
                     attributes = obj['attributes']
-                self.objects[obj['object_id']] = {'ann_id': obj['object_id'], 'image_id': img['image_id'],
-                                               'box': [obj['x'], obj['y'], obj['w'], obj['h']],
-                                               'names': obj['names'],
-                                               'attributes': attributes,
-                                               'synsets': obj['synsets'],
-                                               'relations': []}
+                self.objects[obj['object_id']] = {'obj_id': obj['object_id'], 'image_id': img['image_id'],
+                                                  'box': [obj['x'], obj['y'], obj['w'], obj['h']],
+                                                  'categories': obj['names'],
+                                                  'attributes': attributes,
+                                                  # 'synsets': obj['synsets'],
+                                                  'relations': []}
 
-            for rel in f_relations:
+            for rel in img['relationships']:
                 self.objects[rel['subject_id']]['relations'].append(rel)
 
-        obj_ids.sort()
-        for h_id, obj_id in enumerate(obj_ids):
-            if obj_id in self.objects:
-                self.objects[obj_id]['h5_id'] = h_id
+        # obj_ids.sort()
+        # for h_id, obj_id in enumerate(obj_ids):
+        #     if obj_id in self.objects:
+        #         self.objects[obj_id]['h5_id'] = h_id
 
         print('we have %s images.' % len(self.images))
         print('we have %s (filtered) objects, %.1f per image.'
@@ -152,7 +130,7 @@ class VGLoader(object):
 
     @property
     def vocab_size(self):
-        return len(self.word_embed.word_to_ix)
+        return len(self.word_embed.ix_to_word)
 
     # @property
     # def label_length(self):
@@ -187,8 +165,8 @@ class VGLoader(object):
 
             valid_name = False
             for name in obj['names']:
-                # if self.name_count.get(name, 0) >= self.name_count_thresh:
-                if name in self.ix_to_name:
+                # if self.name_count.get(name, 0) >= self.cat_count_thresh:
+                if name in self.ix_to_cat:
                     valid_name = True
                     break
             if not valid_name:

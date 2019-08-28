@@ -20,7 +20,7 @@ class PhraseList(object):
         self.phrase_structures = phrase_structures
 
         if vg_loader is not None:
-            cat_to_ix = vg_loader.name_to_ix
+            cat_to_ix = vg_loader.cat_to_ix
             cat_labels = list()
             for pst in phrase_structures:
                 cat_labels.append(cat_to_ix.get(pst['name'], -1) + 1)  # [UNK] as label 0

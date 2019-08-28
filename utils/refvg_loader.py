@@ -12,10 +12,10 @@ class RefVGLoader:
 
     def __init__(self, split=None, rebalance=False, vg_loader=None, obj_filter=False, allow_no_structure=False,
                  word_embed=None):
-        # parent loader instance
+
         self.vg_loader = vg_loader
         if not vg_loader:
-            self.vg_loader = VGLoader(split=split, obj_filter=obj_filter, word_embed=word_embed)
+            self.vg_loader = VGLoader(split=split, word_embed=word_embed, obj_filter=obj_filter)
 
         ref_tasks = []
         if not split:
@@ -23,6 +23,7 @@ class RefVGLoader:
         else:
             ss = split.split('_')
 
+        print('RefVGLoader loading refer data')
         for s in ss:
             if rebalance:
                 print('RefVGLoader loading refer_filtered_instance_rebalance_%s.json' % s)
@@ -37,7 +38,6 @@ class RefVGLoader:
         self.ImgInsBoxes = {}
         self.ImgInsPolygons = {}
         self.ImgReferTasks = {}
-        loaded_img_ids = []
         for task in ref_tasks:
             if not allow_no_structure and not task['phrase_structure']:
                 continue
@@ -55,20 +55,19 @@ class RefVGLoader:
                 self.ImgReferTasks[img_id] = [task]
                 self.ImgInsBoxes[img_id] = task['instance_boxes'][:]
                 self.ImgInsPolygons[img_id] = task['Polygons'][:]
-                loaded_img_ids.append(img_id)
                 task['ins_box_ixs'] = range(len(task['instance_boxes']))
 
-        print('RefVGLoader spliting img_ids')
-        self.img_ids = [img_id for img_id, img in self.vg_loader.images.items()
-                        if img['split'] in ss and img_id in loaded_img_ids]
-        self.img_ids.sort()
+        self.img_ids = list(self.ImgInsBoxes.keys())
+        self.shuffle()
         self.iterator = 0
         print('RefVGLoader ready.')
 
     def shuffle(self):
         random.shuffle(self.img_ids)
+        return
 
-    def get_rel_descriptions(self, phrase, p_struct):
+    @staticmethod
+    def get_rel_descriptions(phrase, p_struct):
         predicates = [rel['predicate'] for rel in p_struct['relations']]
         if len(predicates) == 0:
             return []
@@ -113,29 +112,29 @@ class RefVGLoader:
             img_id = self.img_ids[ri]
 
         vg_img = self.vg_loader.images[img_id]
-        vg_ann_id_set = set()
-        vg_ann_ids = []
+        vg_obj_id_set = set()
+        vg_obj_ids = []
         vg_boxes = []
 
-        img_ann_ids = vg_img['ann_ids']
-        img_vg_boxes = [self.vg_loader.objects[ann_id]['box'] for ann_id in img_ann_ids]
+        img_obj_ids = vg_img['obj_ids']
+        img_vg_boxes = [self.vg_loader.objects[obj_id]['box'] for obj_id in img_obj_ids]
         img_ins_boxes = self.ImgInsBoxes[img_id]
         img_ins_Polygons = self.ImgInsPolygons[img_id]
         for task in self.ImgReferTasks[img_id]:
             # for i in task['ann_ids']:
                 # if i not in img_ann_ids:
-                #     print('ann_id not in vg_pp: %s' % i)
-            task_ann_ids = [i for i in task['ann_ids'] if i in img_ann_ids]
-            vg_ann_ids.append(task_ann_ids)
-            vg_ann_id_set.update(task_ann_ids)
-            vg_boxes.append([self.vg_loader.objects[ann_id]['box'] for ann_id in task_ann_ids])
+                #     print('obj_id not in vg_pp: %s' % i)
+            task_obj_ids = [i for i in task['ann_ids'] if i in img_obj_ids]
+            vg_obj_ids.append(task_obj_ids)
+            vg_obj_id_set.update(task_obj_ids)
+            vg_boxes.append([self.vg_loader.objects[obj_id]['box'] for obj_id in task_obj_ids])
 
         phrases = []
         task_ids = []
         p_structures = []
         gt_Polygons = []
         gt_boxes = []
-        img_ins_names = []
+        img_ins_cats = []
         img_ins_atts = []
         # img_ins_rels = []
         for task in self.ImgReferTasks[img_id]:
@@ -144,7 +143,7 @@ class RefVGLoader:
             gt_boxes.append(task['instance_boxes'])
             p_structures.append(task['phrase_structure'])
             gt_Polygons.append(task['Polygons'])
-            img_ins_names += [task['phrase_structure']['name']] * len(task['instance_boxes'])
+            img_ins_cats += [task['phrase_structure']['name']] * len(task['instance_boxes'])
             img_ins_atts += [task['phrase_structure']['attributes']] * len(task['instance_boxes'])
             # img_ins_rels += [task['phrase_structure']['relations']] * len(task['instance_boxes'])
 
@@ -162,13 +161,13 @@ class RefVGLoader:
         data['img_vg_boxes'] = img_vg_boxes
         data['img_ins_boxes'] = img_ins_boxes
         data['img_ins_Polygons'] = img_ins_Polygons
-        data['img_ins_names'] = img_ins_names
+        data['img_ins_cats'] = img_ins_cats
         data['img_ins_atts'] = img_ins_atts
         # data['img_ins_rels'] = img_ins_rels
         data['gt_Polygons'] = gt_Polygons
         data['gt_boxes'] = gt_boxes
         data['vg_boxes'] = vg_boxes
-        data['vg_ann_ids'] = vg_ann_ids
+        data['vg_obj_ids'] = vg_obj_ids
 
         data['bounds'] = {'it_pos_now': self.iterator, 'it_max': max_index, 'wrapped': wrapped}
 
