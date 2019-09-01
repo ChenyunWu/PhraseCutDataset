@@ -8,7 +8,7 @@ from matplotlib.patches import Rectangle, Polygon
 
 plt.switch_backend('agg')
 
-from data_transfer import xyxy_to_xywh
+from .data_transfer import xyxy_to_xywh
 
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
@@ -65,11 +65,11 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
         return
     if ax is None and fig is None:
         fig, ax = plt.subplots(figsize=fig_size)
-        ax.set_frame_on(False)
-        # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
-        fig.add_axes(ax)
+        # ax.set_frame_on(False)
+        # # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
+        # ax.get_xaxis().set_visible(False)
+        # ax.get_yaxis().set_visible(False)
+        # fig.add_axes(ax)
 
     if title is not None:
         ax.set_title(title, color=colors['title'], fontsize=fontsize)
@@ -147,11 +147,15 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
         if cbar == 'pred':
-            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=0.2)
+            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7)
             cb = fig.colorbar(p, ax=ax, format='%.2f')
             # cb.ax.tick_params(labelsize=4)
         else:
             ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
+
+    ax.set_frame_on(False)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
 
     return fig
 

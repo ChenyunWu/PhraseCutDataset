@@ -43,7 +43,7 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=Non
     result_path = os.path.join(out_path, 'results.txt')
     result_enabled = os.path.exists(result_path)
 
-    score_plot_enabled = 'pred_scores' in predictions.values()[0].values()[0]
+    score_plot_enabled = 'pred_scores' in list(list(predictions.values())[0].values())[0]
     score_plot_path = None
     if score_plot_enabled:
         score_plot_path = os.path.join(out_path, 'score_plots')
