@@ -18,9 +18,9 @@ from utils.visualize_utils import gt_visualize_to_file, pred_visualize_to_file, 
 from utils.refvg_loader import RefVGLoader
 
 
-def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=None,
-              gt_plot_path='data/refvg/visualizations', refvg_loader=None, refvg_split=None,
-              all_task_num=400, subset_task_num=200, verbose=True):
+def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, pred_score_thresh=0.0, out_path=None,
+              gt_plot_path='data/refvg/visualizations', refvg_loader=None, refvg_split=None, all_task_num=400,
+              subset_task_num=200, verbose=True, gt_skip_exist=True, pred_skip_exist=True):
     # prepare
     if pred_eval is not None:
         predictions = pred_eval
@@ -59,9 +59,12 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=Non
         subset_dict[s] = list()
     for img_id, img_pred in predictions.items():
         for task_id, pred in img_pred.items():
-            assert 'subsets' in pred
-            for subset in pred['subsets']:
-                subset_dict[subset].append((img_id, task_id))
+            if 'subsets' in pred:
+                for subset in pred['subsets']:
+                    subset_dict[subset].append((img_id, task_id))
+            else:
+                pred['subsets'] = ['all']
+                subset_dict['all'].append((img_id, task_id))
 
     # generate html for each subset
     for subset, img_task_ids in subset_dict.items():
@@ -78,15 +81,24 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, out_path=Non
         # generate plots (if not already there)
         for i, (img_id, task_id) in enumerate(img_task_ids):
             img_data = refvg_loader.get_img_ref_data(img_id)
-            pred_mask = predictions[img_id][task_id]['pred_mask']
-            pred_mask = np.unpackbits(pred_mask)[:img_data['height'] * img_data['width']] \
-                .reshape((img_data['height'], img_data['width']))
-            g1 = gt_visualize_to_file(img_data, task_id, out_path=gt_plot_path)
-            g2 = pred_visualize_to_file(img_data, task_id, pred_mask=pred_mask, out_path=pred_plot_path)
+            pred = predictions[img_id][task_id]
+            if 'pred_mask' not in pred:
+                assert 'pred_scores' in pred
+                pred_mask = pred['pred_scores'] >= pred_score_thresh
+            else:
+                pred_mask = pred['pred_mask']
+                pred_mask = np.unpackbits(pred_mask)[:img_data['height'] * img_data['width']]\
+                    .reshape((img_data['height'], img_data['width']))
+
+            g1 = gt_visualize_to_file(img_data, task_id, out_path=gt_plot_path, skip_exist=gt_skip_exist)
+            g2 = pred_visualize_to_file(img_data, task_id, pred_mask=pred_mask, out_path=pred_plot_path,
+                                        skip_exist=pred_skip_exist)
+
             g3 = False
-            if 'pred_scores' in predictions[img_id][task_id]:
-                score_mask = predictions[img_id][task_id]['pred_scores']
-                g3 = score_visualize_to_file(img_data, task_id, score_mask=score_mask, out_path=score_plot_path)
+            if 'pred_scores' in pred:
+                score_mask = pred['pred_scores']
+                g3 = score_visualize_to_file(img_data, task_id, score_mask=score_mask, out_path=score_plot_path,
+                                             skip_exist=pred_skip_exist)
             if verbose:
                 print('img %d exp %s: gt plot - %s, pred plot - %s, score plot - %s' % (i, exp_name, g1, g2, g3))
 

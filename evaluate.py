@@ -13,12 +13,13 @@ dataset_path = os.path.join(current_path, '..')
 sys.path.append(os.path.abspath(dataset_path))
 
 from utils.iou import *
-import utils.subset as subset_utils
 from utils.predictor_examples import *
+from utils import subset as subset_utils
 
 
-def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='temp', out_path='output/eval_refvg/',
-             analyze_subset=True, log_to_summary=False, save_pred=True, verbose=True):
+def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='miniv', pred_name='temp',
+             out_path='output/eval_refvg/', analyze_subset=True, log_to_summary=False, save_pred=True, save_result=True,
+             verbose=True, use_existing_result=True):
 
     # initialize
     if refvg_loader is None:
@@ -49,10 +50,10 @@ def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='tem
             gt_boxes = img_data['gt_boxes'][task_i]
             gt_Polygons = img_data['gt_Polygons'][task_i]
             pred_boxes = pred.get('pred_boxes', None)
-            pred_mask_bin = pred.get('pred_mask', None)
             correct = pred.get('correct', 0)
+            pred_mask_bin = pred.get('pred_mask', None)
 
-            if 'iou_mask' in pred:
+            if 'iou_mask' in pred and use_existing_result:
                 # if compared with gt before, directly load from pred dict
                 iou_box = pred['iou_box']
                 iou_mask = pred['iou_mask']
@@ -63,8 +64,10 @@ def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='tem
             else:
                 # compare with gt, log to pred dict
                 if pred_mask_bin is None:
-                    # pred_mask = np.zeros((img_data['height'], img_data['width']))
-                    pred_mask = None
+                    if 'pred_scores' in pred:
+                        pred_mask = pred['pred_scores'] > pred_score_thresh
+                    else:
+                        pred_mask = None
                 else:
                     pred_mask = np.unpackbits(pred_mask_bin)[:img_data['height'] * img_data['width']]\
                         .reshape((img_data['height'], img_data['width']))
@@ -111,15 +114,17 @@ def evaluate(predictions, refvg_loader=None, refvg_split='miniv', pred_name='tem
                    np.mean(stats['all'][1]), np.mean(stats['all'][2])))
 
     exp_name = '%s-%s-%d' % (pred_name, refvg_split, len(predictions))
-    print('saving %s to %s' % (exp_name, out_path))
-    if not os.path.exists(out_path):
+    if (save_pred or save_result) and not os.path.exists(out_path):
         os.makedirs(out_path)
     if save_pred:
+        print('saving %s to %s' % (exp_name, out_path))
         pred_path = os.path.join(out_path, 'pred-eval.npy')
         np.save(pred_path, predictions)
-    print('Start to analyze %s:' % exp_name)
-    analyze_subset_stats(stats, exp_name, out_path, log_to_summary)
-    return predictions
+    # print('Start to analyze %s:' % exp_name)
+    if not save_result:
+        out_path = None
+    results = analyze_subset_stats(stats, exp_name, out_path, log_to_summary)
+    return predictions, results
 
 
 def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
@@ -196,7 +201,7 @@ def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
         summary_box.close()
         summary_subset.write(subset_summary_str + '\n')
         summary_subset.close()
-    return
+    return subset_results
 
 
 def main():

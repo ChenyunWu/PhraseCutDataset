@@ -160,13 +160,13 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     return fig
 
 
-def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'):
+def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations', skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
     fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
-    if os.path.exists(fig_path):
+    if os.path.exists(fig_path) and skip_exist:
         return False
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
@@ -181,13 +181,14 @@ def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations'
     return True
 
 
-def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_mask=None, can_boxes=None):
+def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_mask=None, can_boxes=None,
+                           skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
     fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
-    if os.path.exists(fig_path):
+    if os.path.exists(fig_path) and skip_exist:
         return False
     try:
         fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
@@ -200,13 +201,13 @@ def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_ma
     return True
 
 
-def score_visualize_to_file(img_data, task_id, out_path, score_mask):
+def score_visualize_to_file(img_data, task_id, out_path, score_mask, skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300 * 1.25
     fig_name = '%s.jpg' % task_id
     fig_path = os.path.join(out_path, fig_name)
-    if os.path.exists(fig_path):
+    if os.path.exists(fig_path) and skip_exist:
         return False
     try:
         fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar='pred')

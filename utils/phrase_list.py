@@ -23,7 +23,7 @@ class PhraseList(object):
             cat_to_ix = vg_loader.cat_to_ix
             cat_labels = list()
             for pst in phrase_structures:
-                cat_labels.append(cat_to_ix.get(pst['name'], -1) + 1)  # [UNK] as label 0
+                cat_labels.append(cat_to_ix.get(pst['name'], len(cat_to_ix)) + 1)  # [UNK] as last label
             self.cat_labels = torch.tensor(np.array(cat_labels))
 
             if vg_loader.word_embed is not None and max_phrase_len > 0:
@@ -40,10 +40,14 @@ class PhraseList(object):
         return len(self.phrases)
 
 
-def phrase_lists_cat_field(phrase_lists, field):
+def phrase_lists_concat_field(phrase_lists, field):
     if field in ['phrase_word_labels', 'cat_labels']:
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
+    elif field == 'phrases':
+        merged = list()
+        for pl in phrase_lists:
+            merged += pl.phrases
     else:
         raise NotImplementedError
     return merged

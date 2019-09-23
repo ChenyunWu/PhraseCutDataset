@@ -28,22 +28,44 @@ class WordEmbed:
         else:
             self.embeddings = None
 
-    def encode_sentences_to_labels(self, sent_str_list, label_length):
-        """Input:
-        sent_str_list: list of n sents in string format
-        return int32 (n, label_length) zeros padded in end
+    def encode_sentences_to_labels(self, sentences, label_length):
         """
-        num_sents = len(sent_str_list)
+        Sentences are encoded with <BOS> at the beginning, <EOS> at the end, <PAD> if less than label_length,
+        <UNK> if there are unknown words. label_length includes <BOS> and <EOS>.
+        <PAD> --> 0; <UNK> --> 1; <BOS> --> 2; <EOS> --> 3
+        input sentences: list of n sentences in string format
+        return: int32 (n, label_length) zeros padded in end
+        """
+        assert self.word_to_ix['<PAD>'] == 0
+
+        num_sents = len(sentences)
         labels = np.zeros((num_sents, label_length), dtype=np.int32)
-        for i, sent_str in enumerate(sent_str_list):
-            if isinstance(sent_str, list):
-                tokens = sent_str
-            else:
-                tokens = sent_str.split()
-            for j, w in enumerate(tokens):
-                if j < label_length:
-                    labels[i, j] = self.word_to_ix[w] if w in self.word_to_ix else self.word_to_ix['<UNK>']
+        for i, sentence in enumerate(sentences):
+            words = self.sentence_to_words(sentence)
+            for j, w in enumerate(words):
+                if j == label_length:
+                    break
+                labels[i, j] = self.word_to_ix.get(w, self.word_to_ix['<UNK>'])
         return labels
+
+    @staticmethod
+    def sentence_to_words(sentence):
+        def replace_special(string):
+            special = ['-', "'", ',', ':', '<', '.', '/', '?', '*', '"', '\\', '&', '\x00', '`', '!', ']', '[', '+',
+                       '@', '(', ')']
+            string = string.lower()
+            i = 0
+            while i < len(string):
+                c = string[i]
+                if c in special:
+                    string = string[:i] + ' ' + c + ' ' + string[i + 1:]
+                    i += 2
+                i += 1
+            return string
+        sentence = replace_special(sentence)
+        words = sentence.split()
+        words = ['<BOS>'] + words + ['<EOS>']
+        return words
 
     def decode_labels_to_sentences(self, labels):
         """
@@ -55,6 +77,6 @@ class WordEmbed:
         num_sents = labels.shape[0]
         for i in range(num_sents):
             label = labels[i].tolist()
-            sent_str = ' '.join([self.ix_to_word[int(i)] for i in label if i != 0])
+            sent_str = ' '.join([self.ix_to_word[int(i)] for i in label if i != 0 and i != 2 and i != 3])
             decoded_sent_strs.append(sent_str)
         return decoded_sent_strs
