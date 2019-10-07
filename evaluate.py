@@ -19,7 +19,7 @@ from utils import subset as subset_utils
 
 def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='miniv', pred_name='temp',
              out_path='output/eval_refvg/', analyze_subset=True, log_to_summary=False, save_pred=True, save_result=True,
-             verbose=True, use_existing_result=True):
+             verbose=True, use_existing_result=False):
 
     # initialize
     if refvg_loader is None:
@@ -142,7 +142,12 @@ def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
         summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
 
     sample_num = len(stats['all'][1])
-    for k, v in sorted(stats.items()):
+    print('subsets:\n', ','.join([k for k, v in stats.items()]))
+    for k in subset_utils.subsets:
+        if k not in stats:
+            continue
+        v = stats[k]
+    # for k, v in stats.items():
         count = len(v[1])
         if count == 0:
             print('\n%s: count = 0' % k)

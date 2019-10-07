@@ -20,7 +20,7 @@ from utils.refvg_loader import RefVGLoader
 
 def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, pred_score_thresh=0.0, out_path=None,
               gt_plot_path='data/refvg/visualizations', refvg_loader=None, refvg_split=None, all_task_num=400,
-              subset_task_num=200, verbose=True, gt_skip_exist=True, pred_skip_exist=True):
+              subset_task_num=200, verbose=False, gt_skip_exist=True, pred_skip_exist=True):
     # prepare
     if pred_eval is not None:
         predictions = pred_eval
@@ -61,13 +61,18 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, pred_score_t
         for task_id, pred in img_pred.items():
             if 'subsets' in pred:
                 for subset in pred['subsets']:
-                    subset_dict[subset].append((img_id, task_id))
+                    if subset in subset_dict:
+                        subset_dict[subset].append((img_id, task_id))
             else:
                 pred['subsets'] = ['all']
                 subset_dict['all'].append((img_id, task_id))
 
     # generate html for each subset
-    for subset, img_task_ids in subset_dict.items():
+    for subset in subset_utils.subsets:
+        if subset not in subset_dict:
+            continue
+        img_task_ids = subset_dict[subset]
+    # for subset, img_task_ids in subset_dict.items():
         # sample
         if subset == 'all':
             sample_num = all_task_num
@@ -117,8 +122,8 @@ def visualize(pred_eval=None, exp_name='temp', pred_eval_path=None, pred_score_t
         html_name = '%s_%s(%s).html' % (subset, len(img_task_ids), total_num)
         with open(os.path.join(html_path, html_name), 'w') as f:
             f.write(html_str)
-        if verbose:
-            print('%s saved.' % html_name)
+        # if verbose:
+        print('%s saved.' % html_name)
     return
 
 

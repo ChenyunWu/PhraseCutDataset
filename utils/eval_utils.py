@@ -43,7 +43,9 @@ class BinThreshSearcher:
 
 
 def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=0.01,
-                            early_stop_img=0, max_img_count=0):
+                            early_stop_img=0, max_img_count=0, verbose=True):
+    if verbose:
+        print('start find_thresh_by_percents...')
     thresholds = np.zeros(len(pos_percents))
     thresholds_old = np.zeros(len(pos_percents))
     stable_img_count = 0
@@ -52,6 +54,8 @@ def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=
     img_ids = list(predictions.keys())
     random.shuffle(img_ids)
     for img_i, img_id in enumerate(img_ids):
+        if verbose:
+            print('start img %d' % img_i)
         thresholds_old[:] = thresholds
 
         for pred in predictions[img_id].values():
@@ -66,6 +70,8 @@ def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=
                 thresholds[pi] = thresh_searcher.get_threshold_by_percent(pos_percent)
             if np.max(np.abs(thresholds - thresholds_old)) < acc:
                 stable_img_count += 1
+            if verbose:
+                print('thresholds:', thresholds, '  stable count:', stable_img_count)
             if stable_img_count > early_stop_img:
                 break
 
@@ -75,7 +81,7 @@ def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=
 
     # print(thresh_searcher)
     print('score bins: ', thresh_searcher.bins)
-    # print(thresholds)
+    print(thresholds)
     return thresholds
 
 
