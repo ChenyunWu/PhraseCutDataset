@@ -30,9 +30,13 @@ class PhraseList(object):
                 word_embed = vg_loader.word_embed
                 self.phrase_word_labels = torch.tensor(word_embed.encode_sentences_to_labels(phrases, max_phrase_len),
                                                        dtype=torch.long)
+                cat_names = [pst['name'] for pst in phrase_structures]
+                self.cat_word_labels = torch.tensor(word_embed.encode_sentences_to_labels(cat_names, max_phrase_len),
+                                                    dtype=torch.long)
 
     def to(self, *args, **kwargs):
         self.phrase_word_labels = self.phrase_word_labels.to(*args, **kwargs)
+        self.cat_word_labels = self.cat_word_labels.to(*args, **kwargs)
         self.cat_labels = self.cat_labels.to(*args, **kwargs)
         return self
 
@@ -41,7 +45,7 @@ class PhraseList(object):
 
 
 def phrase_lists_concat_field(phrase_lists, field):
-    if field in ['phrase_word_labels', 'cat_labels']:
+    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
     elif field == 'phrases':
