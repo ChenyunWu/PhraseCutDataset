@@ -24,7 +24,7 @@ from .iou import iou_box
 class VGLoader(object):
 
     def __init__(self, split=None, word_embed=None, phrase_length=10, cat_count_thresh=21, att_count_thresh=21,
-                 rel_count_thresh=21, obj_filter=True, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
+                 rel_count_thresh=21, obj_filter=False, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
 
         self.word_embed = word_embed
         self.phrase_length = phrase_length
@@ -39,30 +39,27 @@ class VGLoader(object):
         print('Loader loading name_att_rel_count_amt.json')
         with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
             count_info = json.load(f)
-            cat_count = count_info['name']
-            att_count = count_info['att']
-            rel_count = count_info['rel']
+            self.cat_count_list = count_info['cat']  # list of (cat_name, count), count from high to low
+            self.att_count_list = count_info['att']
+            self.rel_count_list = count_info['rel']
 
-        # prepare category(names)
-        self.cat_to_cnt = {k: v for k, v in cat_count.items() if v >= cat_count_thresh}
-        self.ix_to_cat = [k for (k, v) in sorted(self.cat_to_cnt.items(), key=lambda kv: -kv[1])]
-        self.cat_to_ix = {cat: ix for ix, cat in enumerate(self.ix_to_cat)}
-        print('Number of categories: %d / %d, frequency thresh: %d'
-              % (len(self.ix_to_cat), len(cat_count), cat_count_thresh))
+        # prepare category
+        self.label_to_cat = ['[INV]'] + [k for (k, c) in self.cat_count_list if c >= cat_count_thresh] + ['[UNK]']
+        self.cat_to_label = {cat: l for l, cat in enumerate(self.label_to_cat)}
+        print('Number of categories: %d / %d, frequency thresh: %d (excluding [INV] [UNK])'
+              % (len(self.label_to_cat) - 2, len(self.cat_count_list), cat_count_thresh))
 
         # prepare attributes
-        self.att_to_cnt = {k: v for k, v in att_count.items() if v >= att_count_thresh}
-        self.ix_to_att = [k for (k, v) in sorted(self.att_to_cnt.items(), key=lambda kv: -kv[1])]
-        self.att_to_ix = {att: ix for ix, att in enumerate(self.ix_to_att)}
-        print('Number of attributes: %d / %d, frequency thresh: %d'
-              % (len(self.ix_to_att), len(att_count), att_count_thresh))
+        self.label_to_att = ['[INV]'] + [k for (k, c) in self.att_count_list if c >= att_count_thresh] + ['[UNK]']
+        self.att_to_label = {att: l for l, att in enumerate(self.label_to_att)}
+        print('Number of attributes: %d / %d, frequency thresh: %d (excluding [INV] [UNK])'
+              % (len(self.label_to_att) - 2, len(self.att_count_list), att_count_thresh))
 
         # prepare relationships
-        self.rel_to_cnt = {k: v for k, v in rel_count.items() if v >= rel_count_thresh}
-        self.ix_to_rel = [k for (k, v) in sorted(self.rel_to_cnt.items(), key=lambda kv: -kv[1])]
-        self.rel_to_ix = {rel: ix for ix, rel in enumerate(self.ix_to_rel)}
-        print('Number of relationships: %d / %d, frequency thresh: %d'
-              % (len(self.ix_to_rel), len(rel_count), rel_count_thresh))
+        self.label_to_rel = ['[INV]'] + [k for (k, c) in self.rel_count_list if c >= rel_count_thresh] + ['[UNK]']
+        self.rel_to_label = {rel: l for l, rel in enumerate(self.label_to_rel)}
+        print('Number of relationships: %d / %d, frequency thresh: %d (excluding [INV] [UNK])'
+              % (len(self.label_to_rel) - 2, len(self.rel_count_list), rel_count_thresh))
 
         # load the image split data
         print('Loader loading image_data_split3000.json')
@@ -166,7 +163,7 @@ class VGLoader(object):
             valid_name = False
             for name in obj['names']:
                 # if self.name_count.get(name, 0) >= self.cat_count_thresh:
-                if name in self.ix_to_cat:
+                if name in self.label_to_cat[1:-1]:
                     valid_name = True
                     break
             if not valid_name:
