@@ -20,11 +20,22 @@ class PhraseList(object):
         self.phrase_structures = phrase_structures
 
         if vg_loader is not None:
-            cat_to_ix = vg_loader.cat_to_ix
+            cat_to_label = vg_loader.cat_to_label
+            unk_cat_label = cat_to_label['[UNK]']
             cat_labels = list()
             for pst in phrase_structures:
-                cat_labels.append(cat_to_ix.get(pst['name'], len(cat_to_ix)) + 1)  # [UNK] as last label
+                cat_labels.append(cat_to_label.get(pst['name'], unk_cat_label))
             self.cat_labels = torch.tensor(np.array(cat_labels))
+
+            # att_to_label = vg_loader.att_to_label
+            # unk_att_label = att_to_label['[UNK]']
+            # self.att_onehot_labels = torch.zeros((len(self.phrases), len(att_to_label)), dtype=torch.int)
+            # for p_i, pst in enumerate(phrase_structures):
+            #     if 'attributes' not in pst:
+            #         continue
+            #     for att in pst['attributes']:
+            #         label = att_to_label.get(att, unk_att_label)
+            #         self.att_onehot_labels[p_i, label] = 1
 
             if vg_loader.word_embed is not None and max_phrase_len > 0:
                 word_embed = vg_loader.word_embed
@@ -38,6 +49,7 @@ class PhraseList(object):
         self.phrase_word_labels = self.phrase_word_labels.to(*args, **kwargs)
         self.cat_word_labels = self.cat_word_labels.to(*args, **kwargs)
         self.cat_labels = self.cat_labels.to(*args, **kwargs)
+        # self.att_onehot_labels = self.att_onehot_labels.to(*args, **kwargs)
         return self
 
     def __len__(self):
@@ -45,7 +57,7 @@ class PhraseList(object):
 
 
 def phrase_lists_concat_field(phrase_lists, field):
-    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:
+    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:  # 'att_onehot_labels'
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
     elif field == 'phrases':

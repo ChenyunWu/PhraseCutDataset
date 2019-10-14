@@ -50,6 +50,9 @@ class VGLoader(object):
               % (len(self.label_to_cat) - 2, len(self.cat_count_list), cat_count_thresh))
 
         # prepare attributes
+        self.att_to_count = {k: c for (k, c) in self.att_count_list}
+        self.att_to_count['[INV]'] = 0
+        self.att_to_count['[UNK]'] = 0
         self.label_to_att = ['[INV]'] + [k for (k, c) in self.att_count_list if c >= att_count_thresh] + ['[UNK]']
         self.att_to_label = {att: l for l, att in enumerate(self.label_to_att)}
         print('Number of attributes: %d / %d, frequency thresh: %d (excluding [INV] [UNK])'
