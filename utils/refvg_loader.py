@@ -19,12 +19,12 @@ class RefVGLoader:
 
         ref_tasks = []
         if not split:
-            ss = ['miniv', 'val', 'test', 'train']
+            self.splits = ['miniv', 'val', 'test', 'train']
         else:
-            ss = split.split('_')
+            self.splits = split.split('_')
 
         print('RefVGLoader loading refer data')
-        for s in ss:
+        for s in self.splits:
             if rebalance:
                 print('RefVGLoader loading refer_filtered_instance_rebalance_%s.json' % s)
                 with open('data/refvg/amt_result/refer_filtered_instance_rebalance_%s.json' % s, 'r') as f:

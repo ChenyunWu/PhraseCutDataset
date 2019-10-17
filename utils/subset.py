@@ -1,11 +1,23 @@
-subsets = ['all',
-           'c20', 'c100', 'c500', 'c500+', 'c21-100', 'c101-500',
+import json
+
+subsets = ['all', 'c_coco',
+           'c20', 'c100', 'c500', 'c21-100', 'c101-500', 'c500+',
            'i_single', 'i_multi', 'i_many',
-           'p_name', 'p_att', 'p_att+', 'p_rel', 'p_rel+', 'p_verbose',
+           'p_name', 'p_att', 'p_att+', 'p_rel', 'p_rel+', 'p_verbose', 'p_attm', 'p_relm',
            't_stuff', 't_obj',
            's_small', 's_mid', 's_large',
-           'a_color', 'a_shape', 'a_material', 'a_texture', 'a_state', 'a_adj', 'a_noun', 'a_loc', 'a_count', 'a_bad'
+           'a20', 'a100', 'a200', 'a21-100', 'a101-200', 'a200+',
+           'a_color', 'a_shape', 'a_material', 'a_texture', 'a_state', 'a_adj', 'a_noun', 'a_loc', 'a_count', 'a_bad',
            ]
+
+with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
+    count_info = json.load(f)
+cat_count_list = count_info['cat']  # list of (cat_name, count), count from high to low
+att_count_list = count_info['att']
+rel_count_list = count_info['rel']
+cat_sorted = [p[0] for p in cat_count_list]
+att_sorted = [p[0] for p in att_count_list]
+rel_sorted = [p[0] for p in rel_count_list]
 
 
 def get_subset(phrase_structure, gt_boxes, gt_relative_size):
@@ -28,29 +40,60 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
     #     if name in phrase:
     #         top_k = ni
     #         break
-    top_k = 501
-    if phrase_structure['name'] in refvg_names20:
-        top_k = refvg_names20.index(phrase_structure['name'])
 
-    if top_k < 20:
+    # c_coco
+    if phrase_structure['name'] in coco:
+        cond['c_coco'] = True
+
+    # cat freq ranking
+    cat_topk = 501
+    if phrase_structure['name'] in cat_sorted:
+        cat_topk = cat_sorted.index(phrase_structure['name'])
+
+    if cat_topk < 20:
         cond['c20'] = True
-    elif top_k < 100:
+    elif cat_topk < 100:
         cond['c21-100'] = True
-    elif top_k < 500:
+    elif cat_topk < 500:
         cond['c101-500'] = True
     else:
         cond['c500+'] = True
-    if top_k < 100:
+
+    if cat_topk < 100:
         cond['c100'] = True
-    if top_k < 500:
+    if cat_topk < 500:
         cond['c500'] = True
+
+    # att freq ranking
+    att_topk = 201
+    for att in phrase_structure['attributes']:
+        if att in att_sorted:
+            att_topk = min(att_sorted.index(att), att_topk)
+
+    if att_topk < 20:
+        cond['a20'] = True
+    elif att_topk < 100:
+        cond['a21-100'] = True
+    elif att_topk < 200:
+        cond['a101-200'] = True
+    else:
+        cond['a200+'] = True
+
+    if att_topk < 100:
+        cond['a100'] = True
+    if att_topk < 200:
+        cond['a200'] = True
 
     # phrase mode
     if phrase_structure:
-        if phrase_structure['attributes']:
+        if len(phrase_structure['attributes']) > 0:
             cond['p_att'] = True
-        if phrase_structure['relations']:
+        if len(phrase_structure['attributes']) > 1:
+            cond['p_attm'] = True
+        if len(phrase_structure['relations']) > 0:
             cond['p_rel'] = True
+        if len(phrase_structure['relations']) > 1:
+            cond['p_relm'] = True
 
         if phrase_structure['type'] == 'name':
             cond['p_name'] = True
@@ -64,9 +107,9 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
     # instance count
     if len(gt_boxes) == 1:
         cond['i_single'] = True
-    if len(gt_boxes) > 1:
+    elif 5 > len(gt_boxes) > 1:
         cond['i_multi'] = True
-    if len(gt_boxes) >= 5:
+    elif len(gt_boxes) >= 5:
         cond['i_many'] = True
 
     # gt size
@@ -133,6 +176,7 @@ att_color = ['white', 'black', 'blue', 'green', 'brown', 'red', 'yellow', 'gray'
              'blond', 'evergreen', 'light colored', 'dark grey', 'multi-colored', 'light skinned', 'dark colored',
              'multi colored', 'blue and white', 'light green', 'bright blue', 'red and white', 'dark gray',
              'cream colored', 'light grey', 'teal', 'navy blue', 'turquoise', 'murky', 'navy']
+
 att_shape = ['large', 'small', 'tall', 'long', 'big', 'short', 'round', 'grassy', 'little', 'thick', 'square', 'thin',
              'sliced', 'curved', 'rectangular', 'flat', 'high', 'wide', 'stacked', 'arched', 'chain link', 'circular',
              'bent', 'cut', 'huge', 'metallic', 'cream', 'pointy', 'extended', 'curly', 'skinny', 'pointed', 'narrow',
@@ -140,17 +184,20 @@ att_shape = ['large', 'small', 'tall', 'long', 'big', 'short', 'round', 'grassy'
              'crossed', 'sharp', 'upside down', 'pointing', 'chopped', 'slice', 'rectangle', 'shallow', 'wispy',
              'rounded', 'piece', 'scattered', 'giant', 'slanted', 'tied', 'sparse', 'circle', 'patchy', 'tilted', 'fat',
              'upright', 'larger']
+
 att_material = ['wooden', 'metal', 'wood', 'brick', 'cloudy', 'glass', 'concrete', 'plastic', 'stone', 'tiled',
                 'cement', 'dirt', 'sandy', 'leafy', 'fluffy', 'rocky', 'snowy', 'leather', 'steel', 'paper',
                 'chocolate', 'tile', 'ceramic', 'grass', 'furry', 'iron', 'water', 'stainless steel', 'hardwood',
                 'marble', 'khaki', 'cardboard', 'porcelain', 'snow covered', 'asphalt', 'chrome', 'rock', 'wicker',
                 'rubber', 'denim', 'muddy', 'foamy', 'granite', 'bricked', 'gravel', 'snow-covered', 'clay', 'sand',
                 'red brick']
+
 att_texture = ['clear', 'wet', 'striped', 'dirty', 'paved', 'shiny', 'painted', 'dry', 'plaid', 'clean', 'blurry',
                'hazy', 'floral', 'rusty', 'splashing', 'cloudless', 'worn', 'smooth', 'checkered', 'spotted',
                'patterned', 'reflecting', 'wrinkled', 'reflective', 'shining', 'choppy', 'rough', 'reflected', 'rusted',
                'lined', 'fuzzy', 'blurred', 'faded', 'printed', 'foggy', 'dusty', 'glazed', 'rippled', 'transparent',
                'frosted']
+
 att_state = ['standing', 'open', 'sitting', 'walking', 'parked', 'hanging', 'playing', 'closed', 'empty', 'on',
              'looking', 'watching', 'flying', 'eating', 'skiing', 'covered', 'surfing', 'skateboarding', 'full',
              'jumping', 'holding', 'close', 'leaning', 'running', 'riding', 'folded', 'waiting', 'moving', 'laying',
@@ -160,6 +207,7 @@ att_state = ['standing', 'open', 'sitting', 'walking', 'parked', 'hanging', 'pla
              'rolling', 'sitting down', 'trimmed', 'breaking', 'crouched', 'bending', 'dressed', 'standing up',
              'wrapped', 'attached', 'floating', 'rolled up', 'lying', 'squatting', 'held', 'cutting', 'outstretched',
              'illuminated', 'reading', 'turned', 'swimming', 'turning']
+
 att_adj = ['young', 'old', 'smiling', 'bare', 'light', 'part', 'dead', 'cooked', 'framed', 'pictured', 'overcast',
            'leafless', 'beautiful', 'stuffed', 'growing', 'decorative', 'electrical', 'electric', 'bald', 'older',
            'lit', 'fresh', 'lush', 'wire', 'happy', 'puffy', 'sunny', 'ripe', 'male', 'palm', 'shirtless', 'female',
@@ -168,14 +216,18 @@ att_adj = ['young', 'old', 'smiling', 'bare', 'light', 'part', 'dead', 'cooked',
            'healthy', 'floppy', 'plain', 'filled', 'modern', 'long sleeve', 'overgrown', 'displayed', 'digital', 'cast',
            'airborne', 'delicious', 'hard', 'carpeted', 'heavy', 'new', 'grilled', 'sleeveless', 'pale', 'pretty',
            'different', 'american', 'nice', 'fake', 'designed', 'cute', 'manicured', 'written']
+
 att_noun = ['tennis', 'baseball', "man's", 'baby', 'train', "woman's", 'pine', 'tree', 'street', 'passenger', 'traffic',
             'computer', 'adult', 'ski', 'man', 'wine', 'burgundy', 'stop', 'snow', 'bathroom', 'city', 'teddy',
             'kitchen', 'patch', 'nike', 'woman', 'wall', 'fire', 'clock', 'window', 'straw', 'flower', 'ground',
             'pizza', 'apple', 'power', 'coffee', 'tennis player', 'toy', 'ocean']
+
 att_loc = ['distant', 'background', 'back', 'behind', 'in background', 'side', 'up', 'rear', 'down', 'top', 'far',
            'overhead', 'low', 'above', 'outdoors', 'in distance', 'in the background', 'inside', 'outdoor', 'bottom',
            'in air']
+
 att_bad = ['here', 'present', 'wearing', 'in the picture', 'some', 'daytime', 'existing', 'ready', 'made', 'in picture']
+
 
 refvg_names20 = ['man', 'sky', 'wall', 'building', 'shirt', 'tree', 'grass', 'woman', 'person', 'ground', 'trees',
                  'window', 'water', 'table', 'sign', 'head', 'fence', 'floor', 'pole', 'road', 'hair', 'pants',
@@ -313,13 +365,12 @@ refvg_names20 = ['man', 'sky', 'wall', 'building', 'shirt', 'tree', 'grass', 'wo
                  'produce', 'goose', 'hot dogs', 'knives', 'nails', 'lanyard', 'sandal', 'air conditioner', 'petals',
                  'control', 'tabletop', 'tennis shoe']
 
-coco79 = ['bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-          'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
-          'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
-          'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-          'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon',
-          'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
-          'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse',
-          'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
-          'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
-
+coco = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+        'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
+        'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+        'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
+        'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon',
+        'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
+        'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse',
+        'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
+        'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']

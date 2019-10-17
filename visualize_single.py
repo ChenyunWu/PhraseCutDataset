@@ -146,7 +146,7 @@ def generate_html(exp_name, subset, img_task_ids, pred, refvg_loader, gt_rel_pat
 ''' % (title, exp_name, subset, len(img_task_ids))
 
     if result_rel_path is not None:
-        html_str += '<h3>Results</h3><object data="' + result_rel_path + '" width="800" height="800">' \
+        html_str += '<h3>Results</h3><object data="' + result_rel_path + '" width="1000" height="800">' \
                                                                          'TXT Object Not supported</object><hr>\n'
 
     for img_id, task_id in img_task_ids:

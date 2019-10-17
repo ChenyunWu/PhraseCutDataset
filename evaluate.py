@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import argparse
 import os
 import sys
+import numpy as np
 import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
@@ -12,8 +9,9 @@ current_path = os.path.realpath(__file__)
 dataset_path = os.path.join(current_path, '..')
 sys.path.append(os.path.abspath(dataset_path))
 
-from utils.iou import *
-from utils.predictor_examples import *
+from utils.iou import iou_boxes, iou_polygons_masks
+from utils.refvg_loader import RefVGLoader
+from utils.predictor_examples import vg_gt_predictor, vg_rand_predictor, ins_rand_predictor
 from utils import subset as subset_utils
 
 
@@ -51,7 +49,6 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
             gt_Polygons = img_data['gt_Polygons'][task_i]
             pred_boxes = pred.get('pred_boxes', None)
             correct = pred.get('correct', 0)
-            pred_mask_bin = pred.get('pred_mask', None)
 
             if 'iou_mask' in pred and use_existing_result:
                 # if compared with gt before, directly load from pred dict
@@ -63,6 +60,7 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
 
             else:
                 # compare with gt, log to pred dict
+                pred_mask_bin = pred.get('pred_mask', None)
                 if pred_mask_bin is None:
                     if 'pred_scores' in pred:
                         pred_mask = pred['pred_scores'] > pred_score_thresh
@@ -83,7 +81,7 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
                     iou_box = iou_boxes(pred_boxes, gt_boxes)
                 if pred_mask is not None:
                     iou_mask, i_mask, u_mask, gt_relative_size = iou_polygons_masks(gt_polygons, [pred_mask],
-                                                                                iandu=True, gt_size=True)
+                                                                                    iandu=True, gt_size=True)
                 pred['iou_box'] = iou_box
                 pred['iou_mask'] = iou_mask
                 pred['i_mask'] = i_mask
@@ -101,6 +99,8 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
 
             # analyze (by subsets), make visualizations
             for k in subsets:
+                if k not in stats:
+                    print(k, subsets, list(stats.keys()))
                 stats[k][0] += correct
                 stats[k][1].append(float(iou_box))
                 stats[k][2].append(float(iou_mask))
@@ -120,7 +120,8 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
         print('saving %s to %s' % (exp_name, out_path))
         pred_path = os.path.join(out_path, 'pred-eval.npy')
         np.save(pred_path, predictions)
-    # print('Start to analyze %s:' % exp_name)
+    if verbose:
+        print('Start to analyze %s:' % exp_name)
     if not save_result:
         out_path = None
     results = analyze_subset_stats(stats, exp_name, out_path, log_to_summary)
@@ -143,21 +144,23 @@ def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
 
     sample_num = len(stats['all'][1])
     print('subsets:\n', ','.join([k for k, v in stats.items()]))
-    for k in subset_utils.subsets:
-        if k not in stats:
+    for subset in subset_utils.subsets:
+        if subset not in stats:
+            subset_summary_str += ',0.0'
             continue
-        v = stats[k]
-    # for k, v in stats.items():
-        count = len(v[1])
+        stat = stats[subset]
+        count = len(stat[1])
         if count == 0:
-            print('\n%s: count = 0' % k)
+            print('\n%s: count = 0' % subset)
+            subset_summary_str += ',0.0'
             continue
-        box_acc = v[0] * 1.0 / count
-        mean_box_iou = np.mean(v[1])
-        mean_mask_iou = np.mean(v[2])
-        cum_mask_iou = np.sum(v[3]) * 1.0 / np.sum(v[4])
+
+        box_acc = stat[0] * 1.0 / count
+        mean_box_iou = np.mean(stat[1])
+        mean_mask_iou = np.mean(stat[2])
+        cum_mask_iou = np.sum(stat[3]) * 1.0 / np.sum(stat[4])
         s = '\n%s: count=%d(%.4f), box_acc=%.4f, mean_box_iou=%.4f, mean_mask_iou=%.4f, cum_mask_iou=%.4f' \
-              % (k, count, count*1.0 / sample_num, box_acc, mean_box_iou, mean_mask_iou, cum_mask_iou)
+            % (subset, count, count*1.0 / sample_num, box_acc, mean_box_iou, mean_mask_iou, cum_mask_iou)
         print(s)
         if out_path is not None:
             result_f.write(s + '\n')
@@ -165,39 +168,38 @@ def analyze_subset_stats(stats, exp_name, out_path, log_to_summary):
             subset_summary_str += ',%.4f' % mean_mask_iou
 
         box_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
-        mask_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
-
         pred_box_acc = {}
         pred_box_acc_str = 'pred_box_acc: '
         box_sum_str = '%s,%.4f' % (exp_name, mean_box_iou)
 
         for thresh in box_threshs:
-            pred_box_acc[thresh] = np.sum(np.array(v[1]) > thresh) * 1.0 / count
+            pred_box_acc[thresh] = np.sum(np.array(stat[1]) > thresh) * 1.0 / count
             pred_box_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_box_acc[thresh])
             box_sum_str += ',%.4f' % pred_box_acc[thresh]
         print(pred_box_acc_str)
         if out_path is not None:
             result_f.write(pred_box_acc_str + '\n')
-        if log_to_summary and k == 'all':
+        if log_to_summary and subset == 'all':
             summary_box.write(box_sum_str + '\n')
 
+        mask_threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
         pred_mask_acc = {}
         pred_mask_acc_str = 'pred_mask_acc: '
         mask_sum_str = '%s,%.4f,%.4f' % (exp_name, mean_mask_iou, cum_mask_iou)
         for thresh in mask_threshs:
-            pred_mask_acc[thresh] = np.sum(np.array(v[2]) > thresh) * 1.0 / count
+            pred_mask_acc[thresh] = np.sum(np.array(stat[2]) > thresh) * 1.0 / count
             pred_mask_acc_str += 'acc%.1f = %.4f  ' % (thresh, pred_mask_acc[thresh])
             mask_sum_str += ',%.4f' % pred_mask_acc[thresh]
         print(pred_mask_acc_str)
         if out_path is not None:
             result_f.write(pred_mask_acc_str)
-        if log_to_summary and k == 'all':
+        if log_to_summary and subset == 'all':
             summary_mask.write(mask_sum_str + '\n')
 
         result = {'pred_box_acc': pred_box_acc, 'mean_box_iou': mean_box_iou,
                   'pred_mask_acc': pred_mask_acc, 'mean_mask_iou': mean_mask_iou, 'cum_mask_iou': cum_mask_iou,
                   'box_acc': box_acc}
-        subset_results[k] = result
+        subset_results[subset] = result
 
     if out_path is not None:
         result_f.close()

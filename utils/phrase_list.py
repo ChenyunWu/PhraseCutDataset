@@ -27,15 +27,19 @@ class PhraseList(object):
                 cat_labels.append(cat_to_label.get(pst['name'], unk_cat_label))
             self.cat_labels = torch.tensor(np.array(cat_labels))
 
-            # att_to_label = vg_loader.att_to_label
-            # unk_att_label = att_to_label['[UNK]']
-            # self.att_onehot_labels = torch.zeros((len(self.phrases), len(att_to_label)), dtype=torch.int)
-            # for p_i, pst in enumerate(phrase_structures):
-            #     if 'attributes' not in pst:
-            #         continue
-            #     for att in pst['attributes']:
-            #         label = att_to_label.get(att, unk_att_label)
-            #         self.att_onehot_labels[p_i, label] = 1
+            att_to_label = vg_loader.att_to_label
+            unk_att_label = att_to_label['[UNK]']
+            self.att_labels = list()
+            # self.att_binary_labels = torch.zeros((len(self.phrases), len(att_to_label)), dtype=torch.int)
+            for p_i, pst in enumerate(phrase_structures):
+                if 'attributes' not in pst:
+                    self.att_labels.append(list())
+                    continue
+                ph_labels = list()
+                for att in pst['attributes']:
+                    ph_labels.append(att_to_label.get(att, unk_att_label))
+                    # self.att_binary_labels[p_i, label] = 1
+                self.att_labels.append(ph_labels)
 
             if vg_loader.word_embed is not None and max_phrase_len > 0:
                 word_embed = vg_loader.word_embed
@@ -49,7 +53,7 @@ class PhraseList(object):
         self.phrase_word_labels = self.phrase_word_labels.to(*args, **kwargs)
         self.cat_word_labels = self.cat_word_labels.to(*args, **kwargs)
         self.cat_labels = self.cat_labels.to(*args, **kwargs)
-        # self.att_onehot_labels = self.att_onehot_labels.to(*args, **kwargs)
+        # self.att_binary_labels = self.att_binary_labels.to(*args, **kwargs)
         return self
 
     def __len__(self):
@@ -57,13 +61,13 @@ class PhraseList(object):
 
 
 def phrase_lists_concat_field(phrase_lists, field):
-    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:  # 'att_onehot_labels'
+    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:  # 'att_binary_labels'
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
-    elif field == 'phrases':
+    elif field in ['phrases', 'att_labels']:
         merged = list()
         for pl in phrase_lists:
-            merged += pl.phrases
+            merged += getattr(pl, field)
     else:
         raise NotImplementedError
     return merged
