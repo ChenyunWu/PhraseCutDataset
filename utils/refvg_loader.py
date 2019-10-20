@@ -11,7 +11,7 @@ from .vg_loader import VGLoader as VGLoader
 class RefVGLoader:
 
     def __init__(self, split=None, rebalance=False, vg_loader=None, obj_filter=False, allow_no_structure=False,
-                 word_embed=None):
+                 word_embed=None, allow_no_att=True):
 
         self.vg_loader = vg_loader
         if not vg_loader:
@@ -40,6 +40,8 @@ class RefVGLoader:
         self.ImgReferTasks = {}
         for task in ref_tasks:
             if not allow_no_structure and not task['phrase_structure']:
+                continue
+            if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
             img_id = task['image_id']
             if 'relations' in task['phrase_structure']:

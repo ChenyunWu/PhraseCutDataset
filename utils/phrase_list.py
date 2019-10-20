@@ -5,9 +5,10 @@ import torch
 class PhraseList(object):
     """
     Structure that holds a list of phrases as a single tensor.
+    Fields of settings: vg_loader, max_phrase_len
+    Fields of data: phrases, phrase_structures, att_labels, cat_labels, cat_word_labels, phrase_word_labels
     """
-
-    def __init__(self, phrases, phrase_structures, vg_loader=None, max_phrase_len=10):
+    def __init__(self, phrases=None, phrase_structures=None, vg_loader=None, max_phrase_len=10):
         """
         Arguments:
             phrases (list[str]) list of phrases
@@ -19,7 +20,12 @@ class PhraseList(object):
         self.phrases = phrases
         self.phrase_structures = phrase_structures
 
-        if vg_loader is not None:
+        self.att_labels = None
+        self.cat_labels = None
+        self.cat_word_labels = None
+        self.phrase_word_labels = None
+
+        if vg_loader is not None and phrases is not None:
             cat_to_label = vg_loader.cat_to_label
             unk_cat_label = cat_to_label['[UNK]']
             cat_labels = list()
@@ -60,11 +66,22 @@ class PhraseList(object):
         return len(self.phrases)
 
 
+def concat_phrase_lists(phrase_lists):
+    """
+    Concatenate PhraseLists to one.
+    :param phrase_lists: list of additional PhraseList
+    """
+    cat_pl = PhraseList(vg_loader=phrase_lists[0].vg_loader, max_phrase_len=phrase_lists[0].max_phrase_len)
+    for field in ['phrases', 'phrase_structures', 'att_labels', 'cat_labels', 'cat_word_labels', 'phrase_word_labels']:
+        cat_pl.__setattr__(field, phrase_lists_concat_field(phrase_lists, field))
+    return cat_pl
+
+
 def phrase_lists_concat_field(phrase_lists, field):
     if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:  # 'att_binary_labels'
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
-    elif field in ['phrases', 'att_labels']:
+    elif field in ['phrases', 'phrase_structures', 'att_labels']:
         merged = list()
         for pl in phrase_lists:
             merged += getattr(pl, field)
