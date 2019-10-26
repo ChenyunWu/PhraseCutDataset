@@ -44,9 +44,9 @@ class RefVGLoader:
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
             img_id = task['image_id']
-            if 'relations' in task['phrase_structure']:
-                task['phrase_structure']['rel_descriptions'] = self.get_rel_descriptions(task['phrase'],
-                                                                                         task['phrase_structure'])
+            # if 'relations' in task['phrase_structure']:
+            #     task['phrase_structure']['rel_descriptions'] = self.get_rel_descriptions(task['phrase'],
+            #                                                                              task['phrase_structure'])
             if img_id in self.ImgReferTasks.keys():
                 self.ImgReferTasks[img_id].append(task)
                 self.ImgInsBoxes[img_id] += task['instance_boxes']
@@ -67,34 +67,6 @@ class RefVGLoader:
     def shuffle(self):
         random.shuffle(self.img_ids)
         return
-
-    @staticmethod
-    def get_rel_descriptions(phrase, p_struct):
-        predicates = [rel['predicate'] for rel in p_struct['relations']]
-        if len(predicates) == 0:
-            return []
-        ph_segs = []
-        good_p = []
-        for p in predicates:
-            if p in phrase:
-                segs = phrase.split(p, 1)
-                ph_segs.append(segs[0])
-                good_p.append(p)
-                phrase = segs[1]
-        ph_segs.append(phrase)
-        ds = []
-        for i in range(len(good_p)):
-            d = good_p[i] + ' ' + ph_segs[i + 1]
-            d = ' '.join(d.split())
-            ds.append(d)
-        if len(ds) == 0:
-            w_na = p_struct['name'].split() + [a.split() for a in p_struct['attributes']]
-            w_p = phrase.split()
-            w_r = w_p[len(w_na):]
-            rd = ' '.join(w_r)
-            ds = [rd]
-            # print('get_rel_descriptions:', phrase, '-->', rd, p_struct)
-        return ds
 
     def get_img_ref_data(self, img_id=-1):
         """

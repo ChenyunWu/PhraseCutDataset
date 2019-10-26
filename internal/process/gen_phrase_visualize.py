@@ -90,7 +90,7 @@ def gen_phrases(loader, imgs, sample_count=0):
         else:
             s_ann_ids = ann_ids
         phrases = {}  # dict of phrase: data
-        for j, ann_id in enumerate(s_ann_ids):
+        for j, ann_id in enumerate(s_ann_ids):  # Bug here! there can be duplicates in s_ann_ids
             ref_phrase, structure = loader.gen_phrase(ann_id, ann_ids)
             if ref_phrase not in phrases:
                 data = {'image_id': img['image_id'], 'image_url': img_url, 'ann_ids': [ann_id], 'phrase': ref_phrase,
@@ -99,7 +99,7 @@ def gen_phrases(loader, imgs, sample_count=0):
             else:
                 phrases[ref_phrase]['ann_ids'].append(ann_id)
 
-        #remove similar phrases
+        # remove similar phrases
         phrase_list = phrases.keys()
         removed_ids = []
         for i1, p1 in enumerate(phrase_list):

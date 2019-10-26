@@ -11,10 +11,6 @@ img_data_split.json:
 add split: 'train'/'val'/'test' to img info
 
 """
-# from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import json
 import random
 
@@ -23,8 +19,11 @@ from .iou import iou_box
 
 class VGLoader(object):
 
-    def __init__(self, split=None, word_embed=None, phrase_length=10, cat_count_thresh=21, att_count_thresh=21,
-                 rel_count_thresh=21, obj_filter=False, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8):
+    def __init__(self, split=None, word_embed=None, phrase_length=10,
+                 cat_count_thresh=21, att_count_thresh=21, rel_count_thresh=21,
+                 obj_filter=False, obj_size_thresh=0.005, iou_st_thresh=0.5, iou_dt_thresh=0.8,
+                 nar_count_file='data/refvg/amt_result/name_att_rel_count_amt.json',
+                 data_split_file='data/refvg/image_data_split3000.json'):
 
         self.word_embed = word_embed
         self.phrase_length = phrase_length
@@ -32,12 +31,10 @@ class VGLoader(object):
         self.obj_size_thresh = obj_size_thresh
         self.iou_st_thresh = iou_st_thresh
         self.iou_dt_thresh = iou_dt_thresh
-        # only used in generating phrases
-        self.phrase_type_stat = {'name': 0, 'attribute': 0, 'relation': 0, 'location': 0, 'verbose': 0}
 
         # load cat/att/rel count data
-        print('Loader loading name_att_rel_count_amt.json')
-        with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
+        print('Loader loading nar_count: %s' % nar_count_file)
+        with open(nar_count_file, 'r') as f:
             count_info = json.load(f)
             self.cat_count_list = count_info['cat']  # list of (cat_name, count), count from high to low
             self.att_count_list = count_info['att']
@@ -65,8 +62,8 @@ class VGLoader(object):
               % (len(self.label_to_rel) - 2, len(self.rel_count_list), rel_count_thresh))
 
         # load the image split data
-        print('Loader loading image_data_split3000.json')
-        with open('data/refvg/image_data_split3000.json', 'r') as f:
+        print('Loader loading data_split: %s' % data_split_file)
+        with open(data_split_file, 'r') as f:
             imgs_info = json.load(f)
             self.info_dict = {img['image_id']: img for img in imgs_info}
 
@@ -109,7 +106,7 @@ class VGLoader(object):
                     attributes = obj['attributes']
                 self.objects[obj['object_id']] = {'obj_id': obj['object_id'], 'image_id': img['image_id'],
                                                   'box': [obj['x'], obj['y'], obj['w'], obj['h']],
-                                                  'categories': obj['names'],
+                                                  'names': obj['names'],
                                                   'attributes': attributes,
                                                   # 'synsets': obj['synsets'],
                                                   'relations': []}
@@ -132,9 +129,6 @@ class VGLoader(object):
     def vocab_size(self):
         return len(self.word_embed.ix_to_word)
 
-    # @property
-    # def label_length(self):
-    #     return self.info['label_length']
     @staticmethod
     def is_same_category(obj1, obj2):
         names1 = obj1['names']
@@ -142,6 +136,17 @@ class VGLoader(object):
         if len(set(names1).intersection(names2)) == 0:
             return False
         return True
+
+    def is_same_relation(self, rel1, rel2):
+        if rel1['predicate'].strip().lower() != rel2['predicate'].strip().lower():
+            return False
+        sbj1 = self.objects[rel1['subject_id']]
+        obj1 = self.objects[rel1['object_id']]
+        sbj2 = self.objects[rel2['subject_id']]
+        obj2 = self.objects[rel2['object_id']]
+        if self.is_same_category(sbj1, sbj2) and self.is_same_category(obj1, obj2):
+            return True
+        return False
 
     def encode_labels(self, sent_str_list):
         return self.word_embed.encode_sentences_to_labels(sent_str_list, self.phrase_length)
@@ -197,17 +202,6 @@ class VGLoader(object):
                 f_relations.append(rel)
         return f_objs, f_relations
 
-    def is_same_relation(self, rel1, rel2):
-        if rel1['predicate'].strip().lower() != rel2['predicate'].strip().lower():
-            return False
-        sbj1 = self.objects[rel1['subject_id']]
-        obj1 = self.objects[rel1['object_id']]
-        sbj2 = self.objects[rel2['subject_id']]
-        obj2 = self.objects[rel2['object_id']]
-        if self.is_same_category(sbj1, sbj2) and self.is_same_category(obj1, obj2):
-            return True
-        return False
-
     def phrase_struct_to_str(self, obj):
         string = '[' + '|'.join(obj['names']) + ']'
         if len(obj['attributes']) > 0:
@@ -220,95 +214,3 @@ class VGLoader(object):
                 string += rel_str + '|'
             string += '}'
         return string
-
-    def gen_phrase(self, ref_ann_id, ann_ids):
-        def att_name_phrase(att, name):
-            att_words = att.split()
-            ph = att + ' ' + name
-            if len(att_words) > 1:
-                if att_words[0] in ['in', 'on', 'for', 'of', 'with', 'made', 'to', 'not', 'turned', 'off', 'from'] or\
-                        (att_words[0][-3:] == 'ing' and att_words[0] not in ['living', 'king', 'ping', 'ceiling']):
-                    ph = name + ' ' + att
-            return ph
-
-        ref_ann = self.objects[ref_ann_id]
-        if not ref_ann['names']:
-            ref_ann['names'] = ['bad_name']
-        anns = [self.objects[ann_id] for ann_id in ann_ids]
-        unique_type = True
-        st_anns = []
-        st_atts = []
-        st_rels = []
-        phrase_structure = {'type': '', 'name': '', 'attributes': [], 'relations': []}
-        for ann in anns:
-            if ann['ann_id'] == ref_ann['ann_id']:
-                continue
-            if self.is_same_category(ref_ann, ann):
-                unique_type = False
-                st_anns.append(ann)
-                st_atts += ann['attributes']
-                st_rels += ann['relations']
-
-        if unique_type:
-            self.phrase_type_stat['name'] += 1
-            name = random.choice(ref_ann['names'])
-            phrase = name
-            phrase_structure['type'] = 'name'
-            phrase_structure['name'] = name
-            if len(ref_ann['attributes']) > 0:
-                att = random.choice(ref_ann['attributes'])
-                phrase_structure['attributes'].append(att)
-                phrase = att_name_phrase(att, phrase)
-            elif len(ref_ann['relations']) > 0:
-                rels = [r for r in ref_ann['relations'] if len(self.objects[r['object_id']]['names']) > 0]
-                if len(rels) > 0:
-                    rel = random.choice(rels)
-                    phrase_structure['relations'].append(rel)
-                    obj_names = self.objects[rel['object_id']]['names']
-                    obj_name = random.choice(obj_names)
-                    phrase += ' ' + rel['predicate'] + ' ' + obj_name
-            return phrase, phrase_structure
-
-        # look for unique attribute
-        for att in ref_ann['attributes']:
-            if att not in st_atts:
-                name = random.choice(ref_ann['names'])
-                phrase = att_name_phrase(att, name)
-                self.phrase_type_stat['attribute'] += 1
-                phrase_structure['type'] = 'attribute'
-                phrase_structure['name'] = name
-                phrase_structure['attributes'].append(att)
-                return phrase, phrase_structure
-
-        # look for unique relation
-        for ref_rel in ref_ann['relations']:
-            for rel in st_rels:
-                if not self.is_same_relation(ref_rel, rel):
-                    name = random.choice(ref_ann['names'])
-                    if len(self.objects[ref_rel['object_id']]['names']) > 0:
-                        obj_name = random.choice(self.objects[ref_rel['object_id']]['names'])
-                        phrase = name + ' ' + ref_rel['predicate'] + ' ' + obj_name
-                        self.phrase_type_stat['relation'] += 1
-                        phrase_structure['type'] = 'relation'
-                        phrase_structure['name'] = name
-                        phrase_structure['relations'].append(rel)
-                        return phrase, phrase_structure
-
-        # most verbose phrase
-        phrase_str = random.choice(ref_ann['names'])
-        phrase_structure['type'] = 'verbose'
-        phrase_structure['name'] = phrase_str
-        phrase_structure['attributes'] = ref_ann['attributes']
-        phrase_structure['relations'] = ref_ann['relations']
-        for att in ref_ann['attributes']:
-            phrase_str = att_name_phrase(att, phrase_str)
-        added_rel = []
-        for ref_rel in ref_ann['relations']:
-            if len(self.objects[ref_rel['object_id']]['names']) > 0:
-                obj_name = random.choice(self.objects[ref_rel['object_id']]['names'])
-                rel_str = ref_rel['predicate'] + ' ' + obj_name
-                if rel_str not in added_rel:
-                    phrase_str += ' ' + rel_str
-                    added_rel.append(rel_str)
-        self.phrase_type_stat['verbose'] += 1
-        return phrase_str, phrase_structure
