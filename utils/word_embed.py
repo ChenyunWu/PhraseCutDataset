@@ -39,6 +39,8 @@ class WordEmbed:
         assert self.word_to_ix['<PAD>'] == 0
 
         num_sents = len(sentences)
+        if num_sents == 0:
+            return None
         labels = np.zeros((num_sents, label_length), dtype=np.int32)
         for i, sentence in enumerate(sentences):
             words = self.sentence_to_words(sentence)

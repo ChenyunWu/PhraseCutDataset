@@ -8,6 +8,7 @@ class PhraseList(object):
     Fields of settings: vg_loader, max_phrase_len
     Fields of data: phrases, phrase_structures, att_labels, cat_labels, cat_word_labels, phrase_word_labels
     """
+
     def __init__(self, phrases=None, phrase_structures=None, vg_loader=None, max_phrase_len=10):
         """
         Arguments:
@@ -19,33 +20,42 @@ class PhraseList(object):
 
         self.phrases = phrases
         self.phrase_structures = phrase_structures
+        self.phrase_word_labels = None
 
         self.att_labels = None
         self.cat_labels = None
+        self.rel_pred_labels = None
+        self.rel_obj_labels = None
+
         self.cat_word_labels = None
-        self.phrase_word_labels = None
+        self.att_word_labels = None
+        self.rel_pred_word_labels = None
+        self.rel_obj_word_labels = None
 
         if vg_loader is not None and phrases is not None:
-            cat_to_label = vg_loader.cat_to_label
-            unk_cat_label = cat_to_label['[UNK]']
-            cat_labels = list()
-            for pst in phrase_structures:
-                cat_labels.append(cat_to_label.get(pst['name'], unk_cat_label))
-            self.cat_labels = torch.tensor(np.array(cat_labels))
-
-            att_to_label = vg_loader.att_to_label
-            unk_att_label = att_to_label['[UNK]']
+            unk_cat_label = vg_loader.cat_to_label['[UNK]']
+            unk_att_label = vg_loader.att_to_label['[UNK]']
+            unk_rel_pred_label = vg_loader.rel_to_label['[UNK]']
+            self.cat_labels = list()
             self.att_labels = list()
-            # self.att_binary_labels = torch.zeros((len(self.phrases), len(att_to_label)), dtype=torch.int)
-            for p_i, pst in enumerate(phrase_structures):
-                if 'attributes' not in pst:
-                    self.att_labels.append(list())
-                    continue
-                ph_labels = list()
-                for att in pst['attributes']:
-                    ph_labels.append(att_to_label.get(att, unk_att_label))
-                    # self.att_binary_labels[p_i, label] = 1
-                self.att_labels.append(ph_labels)
+            self.rel_pred_labels = list()
+            self.rel_obj_labels = list()
+            for pst in phrase_structures:
+                self.cat_labels.append(vg_loader.cat_to_label.get(pst['name'], unk_cat_label))
+
+                ph_att_labels = list()
+                for att in pst.get('attributes', []):
+                    ph_att_labels.append(vg_loader.att_to_label.get(att, unk_att_label))
+                self.att_labels.append(ph_att_labels)
+
+                ph_rel_pred_labels = list()
+                ph_rel_obj_labels = list()
+                for rel_pred, rel_obj in pst.get('relation_descriptions', []):
+                    ph_rel_pred_labels.append(vg_loader.rel_to_label.get(rel_pred, unk_rel_pred_label))
+                    ph_rel_obj_labels.append(vg_loader.cat_to_label.get(rel_obj, unk_cat_label))
+                self.rel_pred_labels.append(ph_rel_pred_labels)
+                self.rel_obj_labels.append(ph_rel_obj_labels)
+            self.cat_labels = torch.tensor(np.array(self.cat_labels))
 
             if vg_loader.word_embed is not None and max_phrase_len > 0:
                 word_embed = vg_loader.word_embed
@@ -54,12 +64,36 @@ class PhraseList(object):
                 cat_names = [pst['name'] for pst in phrase_structures]
                 self.cat_word_labels = torch.tensor(word_embed.encode_sentences_to_labels(cat_names, max_phrase_len),
                                                     dtype=torch.long)
+                self.att_word_labels = list()
+                self.rel_pred_word_labels = list()
+                self.rel_obj_word_labels = list()
+                for pst in phrase_structures:
+                    ph_atts = pst.get('attributes', [])
+                    if len(ph_atts) > 0:
+                        ph_att_word_labels = torch.tensor(
+                            word_embed.encode_sentences_to_labels(ph_atts, max_phrase_len),dtype=torch.long)
+                        self.att_word_labels.append(ph_att_word_labels)
+
+                    rels = pst.get('relation_descriptions', [])
+                    if len(rels) > 0:
+                        ph_rel_preds = [r[0] for r in rels]
+                        ph_rel_objs = [r[1] for r in rels]
+                        ph_rel_pred_word_labels = torch.tensor(
+                            word_embed.encode_sentences_to_labels(ph_rel_preds, max_phrase_len), dtype=torch.long)
+                        ph_rel_obj_word_labels = torch.tensor(
+                            word_embed.encode_sentences_to_labels(ph_rel_objs, max_phrase_len), dtype=torch.long)
+                        self.rel_pred_word_labels.append(ph_rel_pred_word_labels)
+                        self.rel_obj_word_labels.append(ph_rel_obj_word_labels)
 
     def to(self, *args, **kwargs):
         self.phrase_word_labels = self.phrase_word_labels.to(*args, **kwargs)
         self.cat_word_labels = self.cat_word_labels.to(*args, **kwargs)
         self.cat_labels = self.cat_labels.to(*args, **kwargs)
-        # self.att_binary_labels = self.att_binary_labels.to(*args, **kwargs)
+        for field in ['att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:
+            fl = getattr(self, field)
+            for ei, e in enumerate(fl):
+                fl[ei] = e.to(*args, **kwargs)
+            setattr(self, field, fl)
         return self
 
     def __len__(self):
@@ -72,32 +106,22 @@ def concat_phrase_lists(phrase_lists):
     :param phrase_lists: list of additional PhraseList
     """
     cat_pl = PhraseList(vg_loader=phrase_lists[0].vg_loader, max_phrase_len=phrase_lists[0].max_phrase_len)
-    for field in ['phrases', 'phrase_structures', 'att_labels', 'cat_labels', 'cat_word_labels', 'phrase_word_labels']:
+    for field in ['phrases', 'phrase_structures', 'phrase_word_labels',
+                  'cat_labels', 'att_labels', 'rel_pred_labels', 'rel_obj_labels',
+                  'cat_word_labels', 'att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:
         cat_pl.__setattr__(field, phrase_lists_concat_field(phrase_lists, field))
     return cat_pl
 
 
 def phrase_lists_concat_field(phrase_lists, field):
-    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:  # 'att_binary_labels'
+    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
-    elif field in ['phrases', 'phrase_structures', 'att_labels']:
+    elif field in ['phrases', 'phrase_structures', 'att_labels', 'rel_pred_labels', 'rel_obj_labels',
+                   'att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:
         merged = list()
         for pl in phrase_lists:
             merged += getattr(pl, field)
     else:
         raise NotImplementedError
     return merged
-
-    # """
-    # Merge multiple phrase_lists into one
-    # """
-    # phrases, p_structs, vg_loader, max_p_len = list(), list(), None, 0
-    # has_word_embed = False
-    # for pl in phrase_lists:
-    #     phrases += pl.phrases
-    #     p_structs += pl.phrase_structures
-    #     if vg_loader is None or (not has_word_embed and pl.vg_loader.word_embed is not None):
-    #         vg_loader = pl.vg_loader
-    #     max_p_len = max(max_p_len, pl.max_phrase_len)
-    # return PhraseList(phrases, p_structs, vg_loader, max_p_len)
