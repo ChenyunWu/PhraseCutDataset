@@ -43,7 +43,7 @@ class BinThreshSearcher:
 
 
 def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=0.01,
-                            early_stop_img=0, max_img_count=0, verbose=True):
+                            early_stop_img=0, max_img_count=0, verbose=False):
     if verbose:
         print('start find_thresh_by_percents...')
     thresholds = np.zeros(len(pos_percents))
@@ -80,8 +80,9 @@ def find_thresh_by_percents(predictions, pos_percents=(0.2, 0.3, 0.4, 0.5), acc=
             thresholds[pi] = thresh_searcher.get_threshold_by_percent(pos_percent)
 
     # print(thresh_searcher)
-    print('score bins: ', thresh_searcher.bins)
-    print(thresholds)
+    if verbose:
+        print('score bins: ', thresh_searcher.bins)
+        print(thresholds)
     return thresholds
 
 
