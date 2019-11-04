@@ -4,8 +4,11 @@ from __future__ import print_function
 
 import json
 import random
+import numpy as np
 
 from .vg_loader import VGLoader as VGLoader
+from .subset import get_subset
+from .data_transfer import polygons_to_mask
 
 
 class RefVGLoader:
@@ -35,29 +38,20 @@ class RefVGLoader:
                     ref_tasks += json.load(f)
 
         print('RefVGLoader preparing data')
-        self.ImgInsBoxes = {}
-        self.ImgInsPolygons = {}
-        self.ImgReferTasks = {}
+        self.ImgInsBoxes = dict()
+        self.ImgInsPolygons = dict()
+        self.ImgReferTasks = dict()
         for task in ref_tasks:
             if not allow_no_structure and not task['phrase_structure']:
                 continue
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
             img_id = task['image_id']
-            # if 'relations' in task['phrase_structure']:
-            #     task['phrase_structure']['rel_descriptions'] = self.get_rel_descriptions(task['phrase'],
-            #                                                                              task['phrase_structure'])
-            if img_id in self.ImgReferTasks.keys():
-                self.ImgReferTasks[img_id].append(task)
-                self.ImgInsBoxes[img_id] += task['instance_boxes']
-                self.ImgInsPolygons[img_id] += task['Polygons']
-                task['ins_box_ixs'] = range(len(self.ImgInsBoxes[img_id]) - len(task['instance_boxes']),
-                                            len(self.ImgInsBoxes[img_id]))
-            else:
-                self.ImgReferTasks[img_id] = [task]
-                self.ImgInsBoxes[img_id] = task['instance_boxes'][:]
-                self.ImgInsPolygons[img_id] = task['Polygons'][:]
-                task['ins_box_ixs'] = range(len(task['instance_boxes']))
+            self.ImgReferTasks[img_id] = self.ImgReferTasks.get(img_id, list()) + [task]
+            self.ImgInsBoxes[img_id] = self.ImgInsBoxes.get(img_id, list()) + task['instance_boxes']
+            self.ImgInsPolygons[img_id] = self.ImgInsPolygons.get(img_id, list()) + task['Polygons']
+            task['ins_box_ixs'] = range(len(self.ImgInsBoxes[img_id]) - len(task['instance_boxes']),
+                                        len(self.ImgInsBoxes[img_id]))
 
         self.img_ids = list(self.ImgInsBoxes.keys())
         self.shuffle()
@@ -67,6 +61,26 @@ class RefVGLoader:
     def shuffle(self):
         random.shuffle(self.img_ids)
         return
+
+    def get_task_subset(self, img_id, task_id):
+        vg_img = self.vg_loader.images[img_id]
+        task = None
+        for t in self.ImgReferTasks[img_id]:
+            if t['task_id'] == task_id:
+                task = t
+                break
+        if 'subsets' in task:
+            return task['subsets']
+
+        polygons = list()
+        for ps in task['Polygons']:
+            polygons += ps
+        mps = polygons_to_mask(polygons, vg_img['width'], vg_img['height'])
+        b = np.sum(mps > 0, axis=None)
+        gt_relative_size = b * 1.0 / (vg_img['width'] * vg_img['height'])
+        cond = get_subset(task['phrase_structure'], task['instance_boxes'], gt_relative_size)
+        task['subsets'] = [k for k, v in cond.items() if v]
+        return task['subsets']
 
     def get_img_ref_data(self, img_id=-1):
         """

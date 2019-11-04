@@ -146,12 +146,12 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
+        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0, vmax=1.0)
         if cbar == 'pred':
-            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7)
-            cb = fig.colorbar(p, ax=ax, format='%.2f')
+            cb = fig.colorbar(p, ax=ax, format='%.1f')
             # cb.ax.tick_params(labelsize=4)
-        else:
-            ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
+        # else:
+        #     ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
 
     ax.set_frame_on(False)
     ax.get_xaxis().set_visible(False)
@@ -160,60 +160,62 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     return fig
 
 
-def gt_visualize_to_file(img_data, task_id, out_path='data/refvg/visualizations', skip_exist=True):
+def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
-    fig_name = '%s.jpg' % task_id
-    fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path) and skip_exist:
         return False
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
+    gt_boxes = img_data['gt_boxes'][task_i]
+
     try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons)
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
         fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
         print('WARNING: gt_visualize_to_file fail on %s' % task_id)
         print(e)
+        print(gt_boxes)
 
     return True
 
 
-def pred_visualize_to_file(img_data, task_id, out_path, pred_boxes=None, pred_mask=None, can_boxes=None,
+def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, can_boxes=None,
                            skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
     fig_w = img_data['width'] / 300
-    fig_name = '%s.jpg' % task_id
-    fig_path = os.path.join(out_path, fig_name)
     if os.path.exists(fig_path) and skip_exist:
         return False
-    try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
-                         can_boxes=can_boxes)
-        fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
-        plt.close(fig)
-    except Exception as e:
-        print('WARNING: pred_visualize_to_file fail on %s' % task_id)
-        print(e)
+    # try:
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
+                     can_boxes=can_boxes)
+    fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+    # except Exception as e:
+    #     print('WARNING: pred_visualize_to_file fail on %s' % task_id)
+    #     print(e)
     return True
 
 
-def score_visualize_to_file(img_data, task_id, out_path, score_mask, skip_exist=True):
+def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, include_cbar=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300
-    fig_w = img_data['width'] / 300 * 1.25
-    fig_name = '%s.jpg' % task_id
-    fig_path = os.path.join(out_path, fig_name)
+    fig_w = img_data['width'] / 300
+    if include_cbar:
+        fig_w += fig_h * 0.2
     if os.path.exists(fig_path) and skip_exist:
         return False
-    try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar='pred')
-        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.close(fig)
-    except Exception as e:
-        print('WARNING: score_visualize_to_file fail on %s' % task_id)
-        print(e)
+    # try:
+    cbar = ''
+    if include_cbar:
+        cbar = 'pred'
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar)
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+    # except Exception as e:
+    #     print('WARNING: score_visualize_to_file fail on %s' % task_id)
+    #     print(e)
     return True
