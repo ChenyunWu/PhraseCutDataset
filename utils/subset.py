@@ -8,6 +8,7 @@ subsets = ['all', 'c_coco',
            's_small', 's_mid', 's_large',
            'a20', 'a100', 'a200', 'a21-100', 'a101-200', 'a200+',
            'a_color', 'a_shape', 'a_material', 'a_texture', 'a_state', 'a_adj', 'a_noun', 'a_loc', 'a_count', 'a_bad',
+           'p_att_rel'
            ]
 
 with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
@@ -92,8 +93,10 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
             cond['p_attm'] = True
         if len(phrase_structure['relations']) > 0:
             cond['p_rel'] = True
-        if len(phrase_structure['relations']) > 1:
+        if len(phrase_structure['relation_descriptions']) > 1:
             cond['p_relm'] = True
+        if len(phrase_structure['attributes']) > 0 and len(phrase_structure['relations']) > 0:
+            cond['p_att_rel'] = True
 
         if phrase_structure['type'] == 'name':
             cond['p_name'] = True
@@ -152,6 +155,8 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
                     cond['a_noun'] = True
                 if att in att_loc:
                     cond['a_loc'] = True
+                if att in att_count:
+                    cond['a_count'] = True
                 if att in att_bad:
                     cond['a_bad'] = True
     return cond
@@ -225,6 +230,9 @@ att_noun = ['tennis', 'baseball', "man's", 'baby', 'train', "woman's", 'pine', '
 att_loc = ['distant', 'background', 'back', 'behind', 'in background', 'side', 'up', 'rear', 'down', 'top', 'far',
            'overhead', 'low', 'above', 'outdoors', 'in distance', 'in the background', 'inside', 'outdoor', 'bottom',
            'in air']
+
+att_count = ['one', 'three', 'four', 'many', 'pair', 'several', 'double', 'grouped', 'group', 'together', 'bunch',
+             'alone', 'set', 'single']
 
 att_bad = ['here', 'present', 'wearing', 'in the picture', 'some', 'daytime', 'existing', 'ready', 'made', 'in picture']
 

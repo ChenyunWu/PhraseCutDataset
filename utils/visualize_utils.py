@@ -24,7 +24,7 @@ visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darko
 def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
                gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
                vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, can_boxes=None,
-               set_colors=None, xywh=True, cbar=None):
+               set_colors=None, xywh=True, cbar=None, gray_img=False):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
@@ -52,7 +52,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     :return: fig
     """
     def modify_color(d):
-        colors = visualize_colors
+        colors = visualize_colors.copy()
         if d is None:
             return colors
         for name, color in d.items():
@@ -84,7 +84,12 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
         else:
             raise NotImplementedError
 
-    ax.imshow(img)
+    if gray_img:
+        image = img.convert("L")
+        arr = np.asarray(image)
+        plt.imshow(arr, cmap='gray', vmin=0, vmax=255)
+    else:
+        ax.imshow(img)
 
     if not xywh:
         for boxes in [gt_boxes, gt_all_boxes, vg_boxes, vg_all_boxes, pred_boxes]:
@@ -169,16 +174,13 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
     gt_boxes = img_data['gt_boxes'][task_i]
-
-    try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
-        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.close(fig)
-    except Exception as e:
-        print('WARNING: gt_visualize_to_file fail on %s' % task_id)
-        print(e)
-        print(gt_boxes)
-
+    # try:
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+    # except Exception as e:
+    #     print('WARNING: gt_visualize_to_file fail on %s' % task_id)
+    #     print(e)
     return True
 
 
@@ -212,7 +214,8 @@ def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, inc
     cbar = ''
     if include_cbar:
         cbar = 'pred'
-    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar)
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
+                     set_colors={'pred_mask': 'viridis'})
     fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
     # except Exception as e:
