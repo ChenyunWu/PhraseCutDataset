@@ -151,7 +151,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0, vmax=1.0)
+        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8, vmin=0, vmax=1.0)
         if cbar == 'pred':
             cb = fig.colorbar(p, ax=ax, format='%.1f')
             # cb.ax.tick_params(labelsize=4)

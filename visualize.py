@@ -44,7 +44,7 @@ html_fig_str_formatter = '''
 class Visualizer:
     def __init__(self, refvg_loader=None, refvg_split=None, pred_plot_path=None,
                  gt_plot_path='data/refvg/visualizations', pred_skip_exist=True, gt_skip_exist=True,
-                 all_task_num=400, subset_task_num=200):
+                 all_task_num=400, subset_task_num=200, include_subsets=None):
 
         if refvg_loader is None:
             refvg_loader = RefVGLoader(split=refvg_split)
@@ -64,7 +64,15 @@ class Visualizer:
 
         self.tasks_plotted_cache = dict()
         self.tasks_in_subset = dict()
-        for subset in subset_utils.subsets:
+
+        self.include_subsets = include_subsets
+        if include_subsets is None:
+            self.include_subsets = subset_utils.subsets
+        if subset_task_num <= 0:
+            self.include_subsets = ['all']
+        if 'all' not in self.include_subsets:
+            self.include_subsets.insert(0, 'all')
+        for subset in self.include_subsets:
             self.tasks_in_subset[subset] = set()
 
         self.tasks_html_str = dict()
@@ -86,8 +94,9 @@ class Visualizer:
             return True
         task_subsets = self.refvg_loader.get_task_subset(img_id, task_id)
         for sub in task_subsets:
-            if len(self.tasks_in_subset[sub]) < self.subset_task_num:
-                return True
+            if sub in self.tasks_in_subset:
+                if len(self.tasks_in_subset[sub]) < self.subset_task_num:
+                    return True
         return False
 
     def plot_single_task(self, img_id, task_id, task_pred_dict, pred_bin_tags=None, pred_score_tags=None,
@@ -96,7 +105,8 @@ class Visualizer:
         img_data = self.refvg_loader.get_img_ref_data(img_id)
         task_subsets = self.refvg_loader.get_task_subset(img_id, task_id)
         for subset in task_subsets:
-            self.tasks_in_subset[subset].add(task_id)
+            if subset in self.tasks_in_subset:
+                self.tasks_in_subset[subset].add(task_id)
 
         if task_id not in self.tasks_plotted_cache:
             self.tasks_plotted_cache[task_id] = dict()
@@ -177,8 +187,8 @@ class Visualizer:
         for fig_tag, fig_path in task_cache['figs']:
             rel_path = os.path.relpath(os.path.abspath(fig_path), start=html_path)
             html_str += html_fig_str_formatter % (rel_path, fig_tag)
-
-        html_str += '<br>\n'
+        if len(task_cache['figs']) > 3 and 'figs2' in task_cache:
+            html_str += '<br>\n'
         for fig_tag, fig_path in task_cache.get('figs2', list()):
             rel_path = os.path.relpath(os.path.abspath(fig_path), start=html_path)
             html_str += html_fig_str_formatter % (rel_path, fig_tag)
@@ -188,7 +198,7 @@ class Visualizer:
 
     def generate_html(self, html_path, enable_subsets=True, result_txt_path=None, extra_info=''):
         if enable_subsets:
-            subsets = subset_utils.subsets
+            subsets = self.tasks_in_subset.keys()
         else:
             subsets = ['all']
 
