@@ -41,6 +41,9 @@ class VGLoader(object):
             self.rel_count_list = count_info['rel']
 
         # prepare category
+        self.cat_to_count = {k: c for (k, c) in self.cat_count_list}
+        self.cat_to_count['[INV]'] = 0
+        self.cat_to_count['[UNK]'] = 0
         self.label_to_cat = ['[INV]'] + [k for (k, c) in self.cat_count_list if c >= cat_count_thresh] + ['[UNK]']
         self.cat_to_label = {cat: l for l, cat in enumerate(self.label_to_cat)}
         print('Number of categories: %d / %d, frequency thresh: %d (excluding [INV] [UNK])'
