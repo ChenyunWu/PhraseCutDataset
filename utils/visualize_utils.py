@@ -167,58 +167,66 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
 
 def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     img_id = img_data['image_id']
-    fig_h = img_data['height'] / 300
-    fig_w = img_data['width'] / 300
+    fig_h = img_data['height'] / 300.0
+    fig_w = img_data['width'] / 300.0
     if os.path.exists(fig_path) and skip_exist:
         return False
     task_i = img_data['task_ids'].index(task_id)
     gt_Polygons = img_data['gt_Polygons'][task_i]
     gt_boxes = img_data['gt_boxes'][task_i]
-    # try:
-    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
-    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-    plt.close(fig)
-    # except Exception as e:
-    #     print('WARNING: gt_visualize_to_file fail on %s' % task_id)
-    #     print(e)
+    try:
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
+        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+    except Exception as e:
+        print('WARNING: gt_visualize_to_file fail on %s' % task_id)
+        print(e)
+        print('img_size:', img_data['height'], img_data['width'])
+        print('fig_size:', fig_h, fig_w)
+        print('gt_Polygons:', gt_Polygons)
+        print('gt_boxes:', gt_boxes)
     return True
 
 
 def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, can_boxes=None,
                            skip_exist=True):
     img_id = img_data['image_id']
-    fig_h = img_data['height'] / 300
-    fig_w = img_data['width'] / 300
+    fig_h = img_data['height'] / 300.0
+    fig_w = img_data['width'] / 300.0
     if os.path.exists(fig_path) and skip_exist:
         return False
-    # try:
-    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
-                     can_boxes=can_boxes)
-    fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
-    plt.close(fig)
-    # except Exception as e:
-    #     print('WARNING: pred_visualize_to_file fail on %s' % task_id)
-    #     print(e)
+    try:
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
+                         can_boxes=can_boxes)
+        fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+    except Exception as e:
+        print('WARNING: pred_visualize_to_file fail on %s' % img_id)
+        print(e)
+        print('img_size:', img_data['height'], img_data['width'])
+        print('fig_size:', fig_h, fig_w)
     return True
 
 
 def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, include_cbar=True):
     img_id = img_data['image_id']
-    fig_h = img_data['height'] / 300
-    fig_w = img_data['width'] / 300
+    fig_h = img_data['height'] / 300.0
+    fig_w = img_data['width'] / 300.0
     if include_cbar:
         fig_w += fig_h * 0.2
     if os.path.exists(fig_path) and skip_exist:
         return False
-    # try:
-    cbar = ''
-    if include_cbar:
-        cbar = 'pred'
-    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
-                     set_colors={'pred_mask': 'viridis'})
-    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-    plt.close(fig)
-    # except Exception as e:
-    #     print('WARNING: score_visualize_to_file fail on %s' % task_id)
-    #     print(e)
+    try:
+        cbar = ''
+        if include_cbar:
+            cbar = 'pred'
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
+                         set_colors={'pred_mask': 'viridis'})
+        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+    except Exception as e:
+        print('WARNING: score_visualize_to_file fail on %s' % img_id)
+        print(e)
+        print('img_size:', img_data['height'], img_data['width'])
+        print('fig_size:', fig_h, fig_w)
     return True
