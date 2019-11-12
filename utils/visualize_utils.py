@@ -81,6 +81,11 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
         # elif img_url is not None:
         #     response = requests.get(img_url, verify=False)
         #     img = Image.open(StringIO(response.content))
+        if pred_mask is not None:
+            pred_h, pred_w = pred_mask.shape
+            img_w, img_h = img.size
+            if img_w != pred_w or img_h != pred_h:
+                img = img.resize((pred_w, pred_h))
         else:
             raise NotImplementedError
 
@@ -197,7 +202,7 @@ def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, 
         return False
     try:
         fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
-                         can_boxes=can_boxes)
+                         can_boxes=can_boxes, gray_img=True)
         fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
@@ -216,17 +221,17 @@ def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, inc
         fig_w += fig_h * 0.2
     if os.path.exists(fig_path) and skip_exist:
         return False
-    try:
-        cbar = ''
-        if include_cbar:
-            cbar = 'pred'
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
-                         set_colors={'pred_mask': 'viridis'})
-        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.close(fig)
-    except Exception as e:
-        print('WARNING: score_visualize_to_file fail on %s' % img_id)
-        print(e)
-        print('img_size:', img_data['height'], img_data['width'])
-        print('fig_size:', fig_h, fig_w)
+    # try:
+    cbar = ''
+    if include_cbar:
+        cbar = 'pred'
+    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
+                     set_colors={'pred_mask': 'GnBu'})  # viridis
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+    # except Exception as e:
+    #     print('WARNING: score_visualize_to_file fail on %s' % img_id)
+    #     print(e)
+    #     print('img_size:', img_data['height'], img_data['width'])
+    #     print('fig_size:', fig_h, fig_w)
     return True

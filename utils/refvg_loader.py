@@ -34,6 +34,7 @@ class RefVGLoader:
                     ref_tasks += json.load(f)
             else:
                 print('RefVGLoader loading refer_filtered_instance_refine_%s.json' % s)
+                # with open('data/refvg/amt_result/refer_filtered_instance_%s.json' % s, 'r') as f:
                 with open('data/refvg/amt_result/refer_filtered_instance_refine_%s.json' % s, 'r') as f:
                     ref_tasks += json.load(f)
 

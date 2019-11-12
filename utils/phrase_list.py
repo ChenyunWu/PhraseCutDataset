@@ -65,7 +65,7 @@ class PhraseList(object):
                 self.phrase_anno_labels = list()
                 for ph, ps in zip(phrases, phrase_structures):
                     anno_label = _construct_phrase_annotation_label(ph, ps, max_phrase_len)
-                    self.phrase_anno_labels.append(torch.tensor(anno_label,dtype=torch.long))
+                    self.phrase_anno_labels.append(torch.tensor(anno_label, dtype=torch.long))
                 self.phrase_anno_labels = torch.stack(self.phrase_anno_labels)
 
                 word_embed = vg_loader.word_embed
@@ -97,6 +97,7 @@ class PhraseList(object):
 
     def to(self, *args, **kwargs):
         self.phrase_word_labels = self.phrase_word_labels.to(*args, **kwargs)
+        self.phrase_anno_labels = self.phrase_anno_labels.to(*args, **kwargs)
         self.cat_word_labels = self.cat_word_labels.to(*args, **kwargs)
         self.cat_labels = self.cat_labels.to(*args, **kwargs)
         for field in ['att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:
@@ -172,7 +173,7 @@ def concat_phrase_lists(phrase_lists):
     :param phrase_lists: list of additional PhraseList
     """
     cat_pl = PhraseList(vg_loader=phrase_lists[0].vg_loader, max_phrase_len=phrase_lists[0].max_phrase_len)
-    for field in ['phrases', 'phrase_structures', 'phrase_word_labels',
+    for field in ['phrases', 'phrase_structures', 'phrase_word_labels', 'phrase_anno_labels',
                   'cat_labels', 'att_labels', 'rel_pred_labels', 'rel_obj_labels',
                   'cat_word_labels', 'att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:
         cat_pl.__setattr__(field, phrase_lists_concat_field(phrase_lists, field))
@@ -180,7 +181,7 @@ def concat_phrase_lists(phrase_lists):
 
 
 def phrase_lists_concat_field(phrase_lists, field):
-    if field in ['phrase_word_labels', 'cat_labels', 'cat_word_labels']:
+    if field in ['phrase_word_labels', 'phrase_anno_labels', 'cat_labels', 'cat_word_labels']:
         tensors = [getattr(pl, field) for pl in phrase_lists]
         merged = torch.cat(tensors)
     elif field in ['phrases', 'phrase_structures', 'att_labels', 'rel_pred_labels', 'rel_obj_labels',
