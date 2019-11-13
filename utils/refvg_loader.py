@@ -14,7 +14,7 @@ from .data_transfer import polygons_to_mask
 class RefVGLoader:
 
     def __init__(self, split=None, rebalance=False, vg_loader=None, obj_filter=False, allow_no_structure=False,
-                 word_embed=None, allow_no_att=True):
+                 word_embed=None, allow_no_att=True, allow_no_rel=True):
 
         self.vg_loader = vg_loader
         if not vg_loader:
@@ -46,6 +46,8 @@ class RefVGLoader:
             if not allow_no_structure and not task['phrase_structure']:
                 continue
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
+                continue
+            if not allow_no_rel and len(task['phrase_structure']['relation_descriptions']) == 0:
                 continue
             img_id = task['image_id']
             self.ImgReferTasks[img_id] = self.ImgReferTasks.get(img_id, list()) + [task]

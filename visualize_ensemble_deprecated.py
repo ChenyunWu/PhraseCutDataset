@@ -20,7 +20,7 @@ from utils.visualize_utils import plot_refvg
 
 
 colors = {'title': 'black', 'gt_polygons': 'darkorange', 'gt_boxes': 'chocolate',
-          'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'deepskyblue', 'pred_mask': 'GnBu_r',
+          'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxlist': 'deepskyblue', 'pred_mask': 'GnBu_r',
           'can_boxes': 'darkcyan'}
 
 
@@ -115,7 +115,7 @@ def do_visualize(pred_dict, can_box_pred, task_ids=[], vis_count=10, split='test
         i = 0
         for p_name, pred in pred_dict.items():
             task_pred = pred[img_id][task_id]
-            pred_boxes = task_pred.get('pred_boxes', None)
+            pred_boxes = task_pred.get('pred_boxlist', None)
             pred_mask_bin = task_pred.get('pred_mask', None)
             if pred_mask_bin is not None:
                 pred_mask = np.unpackbits(pred_mask_bin)[:img_data['height'] * img_data['width']]\

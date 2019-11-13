@@ -13,18 +13,18 @@ from .data_transfer import xyxy_to_xywh
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
 # visualize_colors = {'title': 'black', 'gt_mask': 'Blues', 'gt_polygons': 'deepskyblue', 'gt_boxes': 'blue',
-#                     'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'red',
+#                     'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxlist': 'red',
 #                     'pred_mask': 'autumn', 'can_boxes': 'red'}
 
 visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darkorange', 'gt_boxes': 'chocolate',
-                    'gt_all_boxes': 'gold', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxes': 'deepskyblue',
+                    'gt_all_boxes': 'gold', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxlist': 'deepskyblue',
                     'pred_mask': 'GnBu', 'can_boxes': 'darkcyan'}
 
 
 def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
                gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
                vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, can_boxes=None,
-               set_colors=None, xywh=True, cbar=None, gray_img=False):
+               set_colors=None, xywh=True, cbar=None, gray_img=False, img_hw=None, range01=True):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
     Draw less important things first.
@@ -81,11 +81,10 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
         # elif img_url is not None:
         #     response = requests.get(img_url, verify=False)
         #     img = Image.open(StringIO(response.content))
-        if pred_mask is not None:
-            pred_h, pred_w = pred_mask.shape
-            img_w, img_h = img.size
-            if img_w != pred_w or img_h != pred_h:
-                img = img.resize((pred_w, pred_h))
+            if img_hw is not None:
+                ori_w, ori_h = img.size
+                if ori_w != img_hw[1] or ori_h != img_hw[0]:
+                    img = img.resize((img_hw[1], img_hw[0]))
         else:
             raise NotImplementedError
 
@@ -98,7 +97,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
 
     if not xywh:
         for boxes in [gt_boxes, gt_all_boxes, vg_boxes, vg_all_boxes, pred_boxes]:
-            if boxes:
+            if boxes is not None:
                 boxes[:] = xyxy_to_xywh(boxes)
 
     if vg_all_boxes:
@@ -152,16 +151,17 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
 
     if pred_boxes is not None:
         for box in pred_boxes:
-            ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['pred_boxes'],
+            ax.add_patch(Rectangle((box[0], box[1]), box[2], box[3], fill=False, edgecolor=colors['pred_boxlist'],
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8, vmin=0, vmax=1.0)
+        if range01:
+            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8, vmin=0, vmax=1.0)
+        else:
+            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8)
         if cbar == 'pred':
             cb = fig.colorbar(p, ax=ax, format='%.1f')
             # cb.ax.tick_params(labelsize=4)
-        # else:
-        #     ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.7, vmin=0.0, vmax=1.0)
 
     ax.set_frame_on(False)
     ax.get_xaxis().set_visible(False)
@@ -186,6 +186,7 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     except Exception as e:
         print('WARNING: gt_visualize_to_file fail on %s' % task_id)
         print(e)
+        print(fig_path)
         print('img_size:', img_data['height'], img_data['width'])
         print('fig_size:', fig_h, fig_w)
         print('gt_Polygons:', gt_Polygons)
@@ -193,7 +194,7 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     return True
 
 
-def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, can_boxes=None,
+def pred_visualize_to_file(img_data, fig_path, pred_boxlist=None, pred_mask=None, can_boxes=None,
                            skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300.0
@@ -201,8 +202,15 @@ def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, 
     if os.path.exists(fig_path) and skip_exist:
         return False
     try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
-                         can_boxes=can_boxes, gray_img=True)
+        boxes = None
+        img_hw = None
+        xywh = True
+        if pred_boxlist is not None:
+            boxes = pred_boxlist.bbox.cpu().numpy(),
+            img_hw = (pred_boxlist.size[1], pred_boxlist.size[0])
+            xywh = pred_boxlist.mode == 'xywh'
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=boxes, pred_mask=pred_mask,
+                         can_boxes=can_boxes, gray_img=True, img_hw=img_hw, xywh=xywh)
         fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
@@ -213,7 +221,7 @@ def pred_visualize_to_file(img_data, fig_path, pred_boxes=None, pred_mask=None, 
     return True
 
 
-def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, include_cbar=True):
+def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, include_cbar=True, range01=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300.0
     fig_w = img_data['width'] / 300.0
@@ -221,17 +229,17 @@ def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, inc
         fig_w += fig_h * 0.2
     if os.path.exists(fig_path) and skip_exist:
         return False
-    # try:
-    cbar = ''
-    if include_cbar:
-        cbar = 'pred'
-    fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
-                     set_colors={'pred_mask': 'GnBu'})  # viridis
-    fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
-    plt.close(fig)
-    # except Exception as e:
-    #     print('WARNING: score_visualize_to_file fail on %s' % img_id)
-    #     print(e)
-    #     print('img_size:', img_data['height'], img_data['width'])
-    #     print('fig_size:', fig_h, fig_w)
+    try:
+        cbar = ''
+        if include_cbar:
+            cbar = 'pred'
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
+                         set_colors={'pred_mask': 'GnBu'}, img_hw=score_mask.shape, range01=range01)  # viridis
+        fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+    except Exception as e:
+        print('WARNING: score_visualize_to_file fail on %s' % img_id)
+        print(e)
+        print('img_size:', img_data['height'], img_data['width'])
+        print('fig_size:', fig_h, fig_w)
     return True

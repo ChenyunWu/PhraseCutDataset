@@ -26,7 +26,7 @@ def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/
             pred_box_list = img_data['vg_boxes'][task_i]
             pred_mask = boxes_to_mask(pred_box_list, img_data['width'], img_data['height'], xywh=True)
             pred_mask = np.packbits(pred_mask.astype(np.bool))
-            predictions[img_id][task_id] = {'pred_boxes': pred_box_list, 'pred_mask': pred_mask}
+            predictions[img_id][task_id] = {'pred_boxlist': pred_box_list, 'pred_mask': pred_mask}
         if len(predictions) >= eval_img_count > 0:
             break
 
@@ -56,7 +56,7 @@ def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refv
             pred_boxes = [random.choice(img_data['img_vg_boxes'])]
             pred_mask = boxes_to_mask(pred_boxes, img_data['width'], img_data['height'], xywh=True)
             pred_mask = np.packbits(pred_mask.astype(np.bool))
-            predictions[img_id][task_id] = {'pred_boxes': pred_boxes, 'pred_mask': pred_mask}
+            predictions[img_id][task_id] = {'pred_boxlist': pred_boxes, 'pred_mask': pred_mask}
         if len(predictions) >= eval_img_count > 0:
             break
 
@@ -91,7 +91,7 @@ def ins_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_ref
             if pred_box in img_data['gt_boxes']:
                 correct = 1
             pred_mask = np.packbits(pred_mask.astype(np.bool))
-            predictions[img_id][task_id] = {'pred_boxes': [pred_box], 'pred_mask': pred_mask, 'correct': correct}
+            predictions[img_id][task_id] = {'pred_boxlist': [pred_box], 'pred_mask': pred_mask, 'correct': correct}
         if len(predictions) >= eval_img_count > 0:
             break
 

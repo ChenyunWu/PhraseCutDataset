@@ -235,8 +235,8 @@ def evaluate_from_pred_dict(predictions, refvg_split, analyze_subset=True, exp_n
         for task_id, task_pred in im_preds.items():
             if 'pred_mask' in task_pred:
                 pred_mask_tag = 'pred_mask'
-            if 'pred_boxes' in task_pred:
-                pred_boxes_tag = 'pred_boxes'
+            if 'pred_boxlist' in task_pred:
+                pred_boxes_tag = 'pred_boxlist'
             if 'correct' in task_pred:
                 correct_tag = 'correct'
             break

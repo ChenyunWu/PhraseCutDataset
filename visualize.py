@@ -58,6 +58,7 @@ class Visualizer:
         self.gt_plot_path = gt_plot_path
         self.pred_bin_path = os.path.join(pred_plot_path, 'pred_bin')
         self.pred_score_path = os.path.join(pred_plot_path, 'pred_score')
+        self.pred_box_path = os.path.join(pred_plot_path, 'pred_box')
 
         if not os.path.exists(gt_plot_path):
             os.makedirs(gt_plot_path)
@@ -100,7 +101,7 @@ class Visualizer:
         return False
 
     def plot_single_task(self, img_id, task_id, task_pred_dict, pred_bin_tags=None, pred_score_tags=None,
-                         verbose=False):
+                         pred_box_tags=None, verbose=False, range01=True):
         fig_name = '%s.jpg' % task_id
         img_data = self.refvg_loader.get_img_ref_data(img_id)
         task_subsets = self.refvg_loader.get_task_subset(img_id, task_id)
@@ -140,6 +141,22 @@ class Visualizer:
                     tag += ' (old plot)'
                 task_cache_dict['figs'].append((tag, fig_path))
 
+        if pred_box_tags is not None:
+            for tag in pred_box_tags:
+                pred_boxlist = task_pred_dict[tag]
+                out_path = os.path.join(self.pred_box_path, tag)
+                if not os.path.exists(out_path):
+                    os.makedirs(out_path)
+                fig_path = os.path.join(out_path, fig_name)
+                is_new_plot = pred_visualize_to_file(img_data, fig_path=fig_path, pred_boxlist=pred_boxlist,
+                                                     skip_exist=self.pred_skip_exist)
+                plot_info += 'box-%s:%s;' % (tag, is_new_plot)
+                if tag + '_info' in task_pred_dict:
+                    tag += ': ' + task_pred_dict[tag + '_info']
+                if not is_new_plot:
+                    tag += ' (old plot)'
+                task_cache_dict['figs'].append((tag, fig_path))
+
         if pred_score_tags is not None:
             task_cache_dict['figs2'] = list()
             for tag in pred_score_tags:
@@ -148,9 +165,12 @@ class Visualizer:
                 if not os.path.exists(out_path):
                     os.makedirs(out_path)
                 fig_path = os.path.join(out_path, fig_name)
+                cb = True
+                if range01:
+                    cb = tag == 'pred_scores'
                 is_new_plot = score_visualize_to_file(img_data, fig_path=fig_path, score_mask=pred_score,
                                                       skip_exist=self.pred_skip_exist,
-                                                      include_cbar=tag == 'pred_scores')
+                                                      include_cbar=cb, range01=range01)
                 plot_info += 'score-%s:%s;' % (tag, is_new_plot)
                 if tag + '_info' in task_pred_dict:
                     tag += ': ' + task_pred_dict[tag + '_info']
@@ -274,8 +294,8 @@ def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=Non
     visualizer = Visualizer(refvg_split=refvg_split, pred_plot_path=os.path.join(out_path, 'pred_plots'),
                             gt_plot_path=gt_plot_path, pred_skip_exist=pred_skip_exist, gt_skip_exist=gt_skip_exist)
     for img_id, task_id in to_plot:
-         visualizer.plot_single_task(img_id, task_id, predictions[img_id][task_id], pred_bin_tags='pred_mask',
-                                     pred_score_tags='pred_scores', verbose=verbose)
+        visualizer.plot_single_task(img_id, task_id, predictions[img_id][task_id], pred_bin_tags='pred_mask',
+                                    pred_score_tags='pred_scores', verbose=verbose)
 
     # generate html
     html_path = os.path.join(out_path, 'htmls')

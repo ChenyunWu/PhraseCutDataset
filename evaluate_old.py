@@ -47,7 +47,7 @@ def evaluate(predictions, pred_score_thresh=0, refvg_loader=None, refvg_split='m
             phrase_structure = img_data['p_structures'][task_i]
             gt_boxes = img_data['gt_boxes'][task_i]
             gt_Polygons = img_data['gt_Polygons'][task_i]
-            pred_boxes = pred.get('pred_boxes', None)
+            pred_boxes = pred.get('pred_boxlist', None)
             correct = pred.get('correct', 0)
 
             if 'iou_mask' in pred and use_existing_result:
