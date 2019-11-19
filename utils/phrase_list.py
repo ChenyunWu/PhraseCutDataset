@@ -74,6 +74,8 @@ class PhraseList(object):
                 cat_names = [pst['name'] for pst in phrase_structures]
                 self.cat_word_labels = torch.tensor(word_embed.encode_sentences_to_labels(cat_names, max_phrase_len),
                                                     dtype=torch.long)
+
+                # one tensor per phrase (with att/rel). the tensor is #att(rel)_in_phrase x max_phrase_len
                 self.att_word_labels = list()
                 self.rel_pred_word_labels = list()
                 self.rel_obj_word_labels = list()

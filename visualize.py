@@ -40,10 +40,16 @@ html_fig_str_formatter = '''
 </figure>
 '''
 
+mattnet_pred_path = '/mnt/nfs/work1/elm/chenyun/PhraseCutEnsemble/output/eval_refvg_all/det_mattnet_pred_0.15_50_det_test0/test_2814.npy'
+rmi_pred_path = '/mnt/nfs/work1/elm/chenyun/PhraseCutEnsemble/output/eval_refvg_all/rmi_pred_test0/test.npy'
+mattnet_plot_path = 'output/baseline/mattnet/visualizations'
+rmi_plot_path = 'output/baseline/rmi/visualizations'
+
 
 class Visualizer:
     def __init__(self, refvg_loader=None, refvg_split=None, pred_plot_path=None,
-                 gt_plot_path='data/refvg/visualizations', pred_skip_exist=True, gt_skip_exist=True,
+                 gt_plot_path='data/refvg/visualizations_gray', pred_skip_exist=True, gt_skip_exist=True,
+                 include_baselines=True, baselines_skip_exist=True,
                  all_task_num=400, subset_task_num=200, include_subsets=None):
 
         if refvg_loader is None:
@@ -75,6 +81,13 @@ class Visualizer:
             self.include_subsets.insert(0, 'all')
         for subset in self.include_subsets:
             self.tasks_in_subset[subset] = set()
+
+        self.include_baselines = include_baselines
+        self.baselines_skip_exist = baselines_skip_exist
+        if include_baselines:
+            self.mattnet_preds = np.load(mattnet_pred_path, allow_pickle=True, encoding='latin1').item()
+            self.rmi_preds = np.load(rmi_pred_path, allow_pickle=True, encoding='latin1').item()
+            print('Visualizer: mattnet and rmi preds loaded')
 
         self.tasks_html_str = dict()
 
@@ -114,13 +127,56 @@ class Visualizer:
         task_cache_dict = self.tasks_plotted_cache[task_id]
         task_cache_dict['header'] = self._gen_task_html_header(img_data, task_id, task_subsets, task_pred_dict)
 
+        # raw
+        fig_path = os.path.join('data/refvg/images/%d.jpg' % img_id)
+        task_cache_dict['figs'] = [('raw', fig_path)]
+
+        # gt
         fig_path = os.path.join(self.gt_plot_path, fig_name)
         is_new_plot = gt_visualize_to_file(img_data, task_id, fig_path=fig_path, skip_exist=self.gt_skip_exist)
         plot_info = 'task(%d) %s: plot gt:%s;' % (len(self.tasks_plotted_cache) + 1, task_id, is_new_plot)
         tag = 'Ground Truth'
         if not is_new_plot:
             tag += '(old plot)'
-        task_cache_dict['figs'] = [(tag, fig_path)]
+        task_cache_dict['figs'] += [(tag, fig_path)]
+
+        # baselines
+        if self.include_baselines:
+            if img_id not in self.mattnet_preds:
+                print(img_id, 'not in mattent')
+            else:
+                if task_id not in self.mattnet_preds[img_id]:
+                    print(task_id, 'not in mattnet')
+                else:
+                    mattnet_pred_mask = self.mattnet_preds[img_id][task_id]['pred_mask']
+                    mattnet_pred_mask = np.unpackbits(mattnet_pred_mask)[:img_data['height'] * img_data['width']]\
+                        .reshape((img_data['height'], img_data['width']))
+                    mattnet_fig_path = os.path.join(mattnet_plot_path, fig_name)
+                    is_new_plot = pred_visualize_to_file(img_data, fig_path=mattnet_fig_path, pred_mask=mattnet_pred_mask,
+                                                         skip_exist=self.baselines_skip_exist)
+                    plot_info += 'mattnet:%s;' % is_new_plot
+                    tag = 'mattnet'
+                    if not is_new_plot:
+                        tag += '(old plot)'
+                    task_cache_dict['figs'].append((tag, mattnet_fig_path))
+
+            if img_id not in self.rmi_preds:
+                print(img_id, 'not in rmi')
+            else:
+                if task_id not in self.rmi_preds[img_id]:
+                    print(task_id, 'not in rmi')
+                else:
+                    rmi_pred_mask = self.rmi_preds[img_id][task_id]['pred_mask']
+                    rmi_pred_mask = np.unpackbits(rmi_pred_mask)[:img_data['height'] * img_data['width']] \
+                        .reshape((img_data['height'], img_data['width']))
+                    rmi_fig_path = os.path.join(rmi_plot_path, fig_name)
+                    is_new_plot = pred_visualize_to_file(img_data, fig_path=rmi_fig_path, pred_mask=rmi_pred_mask,
+                                                         skip_exist=self.baselines_skip_exist)
+                    plot_info += 'rmi:%s;' % is_new_plot
+                    tag = 'rmi'
+                    if not is_new_plot:
+                        tag += '(old plot)'
+                    task_cache_dict['figs'].append((tag, rmi_fig_path))
 
         if pred_bin_tags is not None:
             for tag in pred_bin_tags:

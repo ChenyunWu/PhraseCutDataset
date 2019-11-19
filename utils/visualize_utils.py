@@ -16,14 +16,14 @@ from .data_transfer import xyxy_to_xywh
 #                     'gt_all_boxes': 'blue', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxlist': 'red',
 #                     'pred_mask': 'autumn', 'can_boxes': 'red'}
 
-visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'darkorange', 'gt_boxes': 'chocolate',
+visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'dodgerblue', 'gt_boxes': 'royalblue',
                     'gt_all_boxes': 'gold', 'vg_boxes': 'green', 'vg_all_boxes': 'green', 'pred_boxlist': 'deepskyblue',
-                    'pred_mask': 'GnBu', 'can_boxes': 'darkcyan'}
+                    'pred_mask': 'GnBu', 'pred_scores': 'cividis', 'can_boxes': 'darkcyan'}
 
 
 def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
                gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
-               vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, can_boxes=None,
+               vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, pred_scores=None, can_boxes=None,
                set_colors=None, xywh=True, cbar=None, gray_img=False, img_hw=None, range01=True):
     """
     Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
@@ -126,7 +126,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
             # masked = np.ma.masked_where(mps == 0, mps)
             # ax.imshow(masked, 'Greens_r', interpolation='none', alpha=0.6)
             for p in ins_ps:
-                ax.add_patch(Polygon(p, fill=True, alpha=0.5, color=c))
+                ax.add_patch(Polygon(p, fill=True, alpha=0.9, color=c))
     elif gt_polygons is not None:
         for pi, polygon in enumerate(gt_polygons):
             if color == 'colorful':
@@ -155,10 +155,13 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
+        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.9, vmin=0, vmax=1.2)
+
+    if pred_scores is not None:
         if range01:
-            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8, vmin=0, vmax=1.0)
+            p = ax.imshow(pred_scores, colors['pred_scores'], interpolation='none', alpha=1.0, vmin=0, vmax=1.0)
         else:
-            p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.8)
+            p = ax.imshow(pred_scores, colors['pred_scores'], interpolation='none', alpha=1.0)
         if cbar == 'pred':
             cb = fig.colorbar(p, ax=ax, format='%.1f')
             # cb.ax.tick_params(labelsize=4)
@@ -180,7 +183,7 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     gt_Polygons = img_data['gt_Polygons'][task_i]
     gt_boxes = img_data['gt_boxes'][task_i]
     try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes)
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes, gray_img=True)
         fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
@@ -233,8 +236,8 @@ def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, inc
         cbar = ''
         if include_cbar:
             cbar = 'pred'
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_mask=score_mask, cbar=cbar, gray_img=True,
-                         set_colors={'pred_mask': 'GnBu'}, img_hw=score_mask.shape, range01=range01)  # viridis
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_scores=score_mask, cbar=cbar, gray_img=True,
+                         img_hw=score_mask.shape, range01=range01)  # viridis
         fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
