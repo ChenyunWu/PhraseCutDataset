@@ -1,24 +1,26 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import json
 import random
 import numpy as np
 
-from .vg_loader import VGLoader as VGLoader
+from .phrase_handler import PhraseHandler
+from .vg_loader import VGLoader
 from .subset import get_subset
 from .data_transfer import polygons_to_mask
+from .file_paths import img_info_fpath, refer_fpaths
 
 
-class RefVGLoader:
+class RefVGLoader(object):
 
-    def __init__(self, split=None, rebalance=False, vg_loader=None, obj_filter=False, allow_no_structure=False,
-                 word_embed=None, allow_no_att=True, allow_no_rel=True):
+    def __init__(self, split=None, phrase_handler=None, word_embed=None, allow_no_att=True, allow_no_rel=True,
+                 include_vg_scene_graph=False):
 
-        self.vg_loader = vg_loader
-        if not vg_loader:
-            self.vg_loader = VGLoader(split=split, word_embed=word_embed, obj_filter=obj_filter)
+        if phrase_handler is None:
+            phrase_handler = PhraseHandler(word_embed=word_embed)
+        self.phrase_handler = phrase_handler
+
+        self.vg_loader = None
+        if include_vg_scene_graph:
+            self.vg_loader = VGLoader(split=split, phrase_handler=phrase_handler, obj_filter=False)
 
         ref_tasks = []
         if not split:
@@ -26,25 +28,23 @@ class RefVGLoader:
         else:
             self.splits = split.split('_')
 
+        print('RefVGLoader loading img_info: %s' % img_info_fpath)
+        with open(img_info_fpath, 'r') as f:
+            imgs_info = json.load(f)
+            self.ImgInfo = {img['image_id']: img for img in imgs_info if img['split'] in self.splits}
+
         print('RefVGLoader loading refer data')
         for s in self.splits:
-            if rebalance:
-                print('RefVGLoader loading refer_filtered_instance_rebalance_%s.json' % s)
-                with open('data/refvg/amt_result/refer_filtered_instance_rebalance_%s.json' % s, 'r') as f:
-                    ref_tasks += json.load(f)
-            else:
-                print('RefVGLoader loading refer_filtered_instance_refine_%s.json' % s)
-                # with open('data/refvg/amt_result/refer_filtered_instance_%s.json' % s, 'r') as f:
-                with open('data/refvg/amt_result/refer_filtered_instance_refine_%s.json' % s, 'r') as f:
-                    ref_tasks += json.load(f)
+            fpath = refer_fpaths[s]
+            print('RefVGLoader loading %s' % fpath)
+            with open(fpath, 'r') as f:
+                ref_tasks += json.load(f)
 
         print('RefVGLoader preparing data')
         self.ImgInsBoxes = dict()
         self.ImgInsPolygons = dict()
         self.ImgReferTasks = dict()
         for task in ref_tasks:
-            if not allow_no_structure and not task['phrase_structure']:
-                continue
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
             if not allow_no_rel and len(task['phrase_structure']['relation_descriptions']) == 0:
@@ -66,7 +66,7 @@ class RefVGLoader:
         return
 
     def get_task_subset(self, img_id, task_id):
-        vg_img = self.vg_loader.images[img_id]
+        img_info = self.ImgInfo[img_id]
         task = None
         for t in self.ImgReferTasks[img_id]:
             if t['task_id'] == task_id:
@@ -78,9 +78,9 @@ class RefVGLoader:
         polygons = list()
         for ps in task['Polygons']:
             polygons += ps
-        mps = polygons_to_mask(polygons, vg_img['width'], vg_img['height'])
+        mps = polygons_to_mask(polygons, img_info['width'], img_info['height'])
         b = np.sum(mps > 0, axis=None)
-        gt_relative_size = b * 1.0 / (vg_img['width'] * vg_img['height'])
+        gt_relative_size = b * 1.0 / (img_info['width'] * img_info['height'])
         cond = get_subset(task['phrase_structure'], task['instance_boxes'], gt_relative_size)
         task['subsets'] = [k for k, v in cond.items() if v]
         return task['subsets']
@@ -102,24 +102,6 @@ class RefVGLoader:
             self.iterator = ri_next
             img_id = self.img_ids[ri]
 
-        vg_img = self.vg_loader.images[img_id]
-        vg_obj_id_set = set()
-        vg_obj_ids = []
-        vg_boxes = []
-
-        img_obj_ids = vg_img['obj_ids']
-        img_vg_boxes = [self.vg_loader.objects[obj_id]['box'] for obj_id in img_obj_ids]
-        img_ins_boxes = self.ImgInsBoxes[img_id]
-        img_ins_Polygons = self.ImgInsPolygons[img_id]
-        for task in self.ImgReferTasks[img_id]:
-            # for i in task['ann_ids']:
-                # if i not in img_ann_ids:
-                #     print('obj_id not in vg_pp: %s' % i)
-            task_obj_ids = [i for i in task['ann_ids'] if i in img_obj_ids]
-            vg_obj_ids.append(task_obj_ids)
-            vg_obj_id_set.update(task_obj_ids)
-            vg_boxes.append([self.vg_loader.objects[obj_id]['box'] for obj_id in task_obj_ids])
-
         phrases = []
         task_ids = []
         p_structures = []
@@ -127,7 +109,6 @@ class RefVGLoader:
         gt_boxes = []
         img_ins_cats = []
         img_ins_atts = []
-        # img_ins_rels = []
         for task in self.ImgReferTasks[img_id]:
             phrases.append(task['phrase'])
             task_ids.append(task['task_id'])
@@ -136,31 +117,43 @@ class RefVGLoader:
             gt_Polygons.append(task['Polygons'])
             img_ins_cats += [task['phrase_structure']['name']] * len(task['instance_boxes'])
             img_ins_atts += [task['phrase_structure']['attributes']] * len(task['instance_boxes'])
-            # img_ins_rels += [task['phrase_structure']['relations']] * len(task['instance_boxes'])
 
         # return data
         data = dict()
         data['image_id'] = img_id
-        data['width'] = vg_img['width']
-        data['height'] = vg_img['height']
-        data['split'] = vg_img['split']
+        img_info = self.ImgInfo[img_id]
+        data['width'] = img_info['width']
+        data['height'] = img_info['height']
+        data['split'] = img_info['split']
 
         data['task_ids'] = task_ids
         data['phrases'] = phrases
         data['p_structures'] = p_structures
 
-        data['img_vg_boxes'] = img_vg_boxes
-        data['img_ins_boxes'] = img_ins_boxes
-        data['img_ins_Polygons'] = img_ins_Polygons
+        data['img_ins_boxes'] = self.ImgInsBoxes[img_id]
+        data['img_ins_Polygons'] = self.ImgInsPolygons[img_id]
         data['img_ins_cats'] = img_ins_cats
         data['img_ins_atts'] = img_ins_atts
-        # data['img_ins_rels'] = img_ins_rels
         data['gt_Polygons'] = gt_Polygons
         data['gt_boxes'] = gt_boxes
-        data['vg_boxes'] = vg_boxes
-        data['vg_obj_ids'] = vg_obj_ids
+
+        if self.vg_loader is not None:
+            vg_img = self.vg_loader.images[img_id]
+            vg_obj_ids = []
+            vg_boxes = []
+
+            img_obj_ids = vg_img['obj_ids']
+            img_vg_boxes = [self.vg_loader.objects[obj_id]['box'] for obj_id in set(img_obj_ids)]
+
+            for task in self.ImgReferTasks[img_id]:
+                task_obj_ids = [i for i in task['ann_ids'] if i in img_obj_ids]
+                vg_obj_ids.append(task_obj_ids)
+                vg_boxes.append([self.vg_loader.objects[obj_id]['box'] for obj_id in set(task_obj_ids)])
+
+            data['img_vg_boxes'] = img_vg_boxes
+            data['vg_boxes'] = vg_boxes
+            data['vg_obj_ids'] = vg_obj_ids
 
         data['bounds'] = {'it_pos_now': self.iterator, 'it_max': max_index, 'wrapped': wrapped}
 
         return data
-

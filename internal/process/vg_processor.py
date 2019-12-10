@@ -10,7 +10,7 @@ class VGProcessor(RefVGLoader):
     def __init__(self, split=None, vg_loader=None, obj_filter=False, word_embed=None):
 
         RefVGLoader.__init__(self, split=split, vg_loader=vg_loader, word_embed=word_embed, obj_filter=obj_filter,
-                             rebalance=False, allow_no_structure=True, allow_no_att=True)
+                             allow_no_att=True)
 
         self.phrase_type_stat = {'name': 0, 'attribute': 0, 'relation': 0, 'location': 0, 'verbose': 0}
         self.images = self.vg_loader.images

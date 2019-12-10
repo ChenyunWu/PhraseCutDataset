@@ -1,22 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
-import sys
+import numpy as np
 import random
 
-current_path = os.path.realpath(__file__)
-dataset_path = os.path.join(current_path, '../..')
-sys.path.append(os.path.abspath(dataset_path))
-
-from utils.refvg_loader import RefVGLoader
-from utils.data_transfer import *
+from .refvg_loader import RefVGLoader
+from .data_transfer import boxes_to_mask, polygons_to_mask
 
 
 def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_gt'):
     """vg boxes used to generate the phrase as the predicted mask"""
-    loader = RefVGLoader(split=split)
+    loader = RefVGLoader(split=split, include_vg_scene_graph=True)
     predictions = dict()
     for img_i, img_id in enumerate(loader.img_ids):
         print('vg_predictor: img %d / %d' % (img_i, eval_img_count))
@@ -46,7 +38,7 @@ def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/
 
 def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_rand'):
     """randomly pick one vg box as the predicted mask"""
-    loader = RefVGLoader(split=split)
+    loader = RefVGLoader(split=split, include_vg_scene_graph=True)
     predictions = dict()
     for img_i, img_id in enumerate(loader.img_ids):
         print('rand_vg_predictor: img %d / %d' % (img_i, eval_img_count))
@@ -75,7 +67,7 @@ def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refv
 
 
 def ins_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/ins_rand'):
-    """randomly pick one vg box as the predicted mask"""
+    """randomly pick one instance mask as the predicted mask"""
     loader = RefVGLoader(split=split)
     predictions = dict()
     for img_i, img_id in enumerate(loader.img_ids):

@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 
 
-
 def analyze_turkers(mask_json, csv_folder):
     turkers = {}
     print('loading mask data')

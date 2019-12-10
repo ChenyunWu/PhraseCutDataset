@@ -1,10 +1,9 @@
-import random
 import numpy as np
 
 
 class ThreshBinSearcher:
     """
-    given prediction scores, calculate
+    input prediction scores, calculate the thresholds for given pos_percents
     """
     def __init__(self, pos_percents=(0.14, 0.16, 0.18, 0.20), early_stop_img_count=0, max_img_count=0,
                  acc=0.01, min_score=0.0, max_score=1.0, max_per_sample=20480):

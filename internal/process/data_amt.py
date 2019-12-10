@@ -5,7 +5,7 @@ import sshtunnel
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 
-from _dataset.utils.iou import iou_boxes_polygons
+from ..utils.iou import iou_boxes_polygons
 
 
 # Used to upload data for Turk annotaion.
@@ -36,10 +36,10 @@ def upload_to_db(json_f='data/refvg/turker_prep/phrases_train1000.json', commit=
                     #     if row[0] != 0:
                     #         print('EXISTING IMG: ', row)
                     if '\\' in data['phrase']:
-                        print 'skipped: %d task_id=%s, phrase=%s' % (i, data['task_id'], data['phrase'])
+                        print('skipped: %d task_id=%s, phrase=%s' % (i, data['task_id'], data['phrase']))
                         continue
                     cur.execute(
-                        "INSERT INTO %s (task_id, image_url, phrase) VALUES ('%s', '%s', '%s')" \
+                        'INSERT INTO %s (task_id, image_url, phrase) VALUES (\'%s\', \'%s\', \'%s\')'
                         % ('requests', data['task_id'], data['image_url'], data['phrase'].replace("'", "''")))
                     # print(data['task_id'])
 
@@ -246,7 +246,6 @@ def gather_collected_data(mask_json, skip_json, split='train'):
     print('saved to refer_%s.json and skip_%s.json' % (split, split))
 
     return
-
 
 
 if __name__ == '__main__':

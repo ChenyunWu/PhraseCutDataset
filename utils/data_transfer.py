@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw
 # box functions
 def xywh_to_xyxy(boxes):
     """Convert [x y w h] box format to [x1 y1 x2 y2] format."""
-    if boxes is None or len(boxes) ==0:
+    if boxes is None or len(boxes) == 0:
         return boxes
     boxes = np.array(boxes)
     return np.hstack((boxes[:, 0:2], boxes[:, 0:2] + boxes[:, 2:4] - 1))
