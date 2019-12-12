@@ -56,7 +56,7 @@ And download all the dataset files into
 `PhraseCutDataset/data/VGPhraseCut_v0/`.
 
 If you prefer to put the dataset elsewhere, 
-simply change the 'dataset_dir' in `utils/file_paths.py`. 
+simply change the 'dataset_dir' in [utils/file_paths.py]. 
 
 ### 1. VGPhraseCut annotations
 All VGPhraseCut annotation files can be downloaded through this
@@ -74,10 +74,12 @@ List of category names, attributes and relationship predicates
 in our dataset, together with their frequency.
 
 #### Referring data:
-We have separate files for the different splits: 
-`refer_train.json`(399.2MB), `refer_val.json`(46.5MB),
- `refer_test.json`(46.6MB), `refer_miniv.json`(335KB).
+- `refer_train.json`(399.2MB)
+- `refer_val.json`(46.5MB)
+- `refer_test.json`(46.6MB)
+- `refer_miniv.json`(335KB)
 
+They are separate files for the different splits. 
 Each file contains a list of tasks. 
 Each task stands for a phrase-region pair, organized as a 'dict' with 
 following keys: 
@@ -102,18 +104,21 @@ following keys:
     relation (name+relation is unique), verbose (not unique)
 
 #### (Optional) Visual Genome scene graph data:
+- `scene_graphs_train.json`(486.1MB)
+- `scene_graphs_val.json`(19.3MB)
+- `scene_graphs_test.json`(19.2MB)
+- `scene_graphs_miniv.json`(116KB)
+
 Only needed if you want to use associated 
 Visual Genome scene graph annotations together with our dataset.
-
-We have separate files for the different splits: 
-`scene_graphs_train.json`(486.1MB), `scene_graphs_val.json`(19.3MB), 
-`scene_graphs_test.json`(19.2MB), `scene_graphs_miniv.json`(116KB).
 They are the same as the scene graphs from Visual Genome v1.2,
 with only annotations on images in our dataset.
 
 
 #### (Optional) Skipped data:
-`skip.json`(11MB): only needed if you are interested in the phrases 
+- `skip.json`(11MB)
+
+Only needed if you are interested in the phrases 
 skipped by the annotators during data collection.
 We provide 'task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure',
 and also **'reason'**: the reason why it is skipped,
@@ -144,7 +149,7 @@ You will need images from Version 1.2 in both part1 (9.2GB) and part2
 (5.47GB).
 
 ## Explore the dataset
-See `dataset_explore.ipynb`
+See [dataset_explore.ipynb]
 
 ## Evaluation
 Input predictions, we report:
@@ -161,7 +166,7 @@ The statistics can be reported on each subset separately.
 **Evaluate your own predictor:**
 
 - Save predictions in a numpy file
-(See example predictors in `utils/eval_utils.py`.)
+(see example predictors in [utils/predictor_examples.py])
 - Run `python evaluate.py --pred_name=your_pred --pred_path=path/to/your/predictions.npy`
 
 
@@ -196,11 +201,10 @@ Used all the annotations of the box to generate the phrase.
 
 **'s\_stuff', 's\_obj':**
 Whether the phrase describes stuff or objects.
-See the list of pre-defined stuff names in `utils/subset`.
+See the list of pre-defined stuff names in [utils/subset.py].
 
-## Provided functions (in `utils`)
-### Simple predictors
-Example predictors in `utils/eval_utils.py`
+## Additional utils
+- **Simple predictors**: Example predictors in [utils/predictor_examples.py]
 ### Loader
 Load the dataset
 ### Visualize

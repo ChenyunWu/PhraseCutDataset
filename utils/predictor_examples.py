@@ -2,8 +2,8 @@ import os
 import numpy as np
 import random
 
-from .refvg_loader import RefVGLoader
-from .data_transfer import boxes_to_mask, polygons_to_mask
+from refvg_loader import RefVGLoader
+from data_transfer import boxes_to_mask, polygons_to_mask
 
 
 def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_gt'):

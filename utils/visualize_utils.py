@@ -8,7 +8,9 @@ from matplotlib.patches import Rectangle, Polygon
 
 plt.switch_backend('agg')
 
-from .data_transfer import xyxy_to_xywh
+from data_transfer import xyxy_to_xywh
+from file_paths import img_fpath
+
 
 # color for "pred_mask" should be a colormap
 # color for "gt_polygons" can be "colorful": different color for each polygon
@@ -21,7 +23,7 @@ visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'dodge
                     'pred_mask': 'GnBu', 'pred_scores': 'cividis', 'can_boxes': 'darkcyan'}
 
 
-def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, fontsize=5,
+def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, font_size=5,
                gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
                vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, pred_scores=None, can_boxes=None,
                set_colors=None, xywh=True, cbar=None, gray_img=False, img_hw=None, range01=True):
@@ -35,7 +37,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     :param img_id: if > 0, get img from local path
     :param img_url: if img_id<=0, get img from this url. Must set one of img, img_id or img_url
     :param title: plot title. better to put referring phrases here
-    :param fontsize: fontsize for title
+    :param font_size: fontsize for title
     :param gt_mask: 2D binary numpy array the same shape as the img
     :param gt_Polygons: Polygons from AMT. list of instance polygons
     :param gt_polygons: Only used when gt_Polygons=None [(polygon:)[(point:)[x1, y1], [x2, y2], ...], [[],[],...],...]
@@ -64,7 +66,10 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     if img_id < 0 and img_url is None and img is None:
         return
     if ax is None and fig is None:
-        fig, ax = plt.subplots(figsize=fig_size)
+        if fig_size is not None:
+            fig, ax = plt.subplots(figsize=fig_size)
+        else:
+            fig, ax = plt.subplots()
         # ax.set_frame_on(False)
         # # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
         # ax.get_xaxis().set_visible(False)
@@ -72,12 +77,12 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
         # fig.add_axes(ax)
 
     if title is not None:
-        ax.set_title(title, color=colors['title'], fontsize=fontsize)
+        ax.set_title(title, color=colors['title'], fontsize=font_size)
 
     # show img
     if img is None:
         if img_id >= 0:
-            img = Image.open('data/refvg/images/%d.jpg' % img_id)
+            img = Image.open(os.path.join(img_fpath, '%d.jpg' % img_id))
         # elif img_url is not None:
         #     response = requests.get(img_url, verify=False)
         #     img = Image.open(StringIO(response.content))

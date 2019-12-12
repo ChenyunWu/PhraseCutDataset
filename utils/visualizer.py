@@ -1,13 +1,12 @@
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
 
-import utils.subset as subset_utils
-from utils.visualize_utils import gt_visualize_to_file, pred_visualize_to_file, score_visualize_to_file
-from utils.refvg_loader import RefVGLoader
+import subset as subset_utils
+from visualize_utils import gt_visualize_to_file, pred_visualize_to_file, score_visualize_to_file
+from refvg_loader import RefVGLoader
 
 
 html_head_str_formatter = '''

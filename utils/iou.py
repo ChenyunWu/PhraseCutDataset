@@ -1,4 +1,4 @@
-from .data_transfer import *
+from data_transfer import *
 
 
 # IoU function

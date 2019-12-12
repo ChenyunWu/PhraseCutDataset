@@ -1,7 +1,6 @@
 import json
 
-from .file_paths import name_att_rel_count_fpath
-from ..internal.process.vg_processor import VGProcessor
+from file_paths import name_att_rel_count_fpath
 
 
 class PhraseHandler(object):
@@ -62,9 +61,18 @@ def construct_phrase(phrase_struct):
     """
     THis func is the same as how the phrases are built in data collection.
     """
+    def att_name_phrase(att, name):
+        att_words = att.split()
+        ph = att + ' ' + name
+        if len(att_words) > 1:
+            if att_words[0] in ['in', 'on', 'for', 'of', 'with', 'made', 'to', 'not', 'turned', 'off', 'from'] or \
+                    (att_words[0][-3:] == 'ing' and att_words[0] not in ['living', 'king', 'ping', 'ceiling']):
+                ph = name + ' ' + att
+        return ph
+
     ph_str = phrase_struct['name']
     for att in phrase_struct['attributes']:
-        ph_str = VGProcessor.att_name_phrase(att, ph_str)
+        ph_str = att_name_phrase(att, ph_str)
     for rel_desc in phrase_struct['relation_descriptions']:
         ph_str += ' ' + rel_desc[0] + ' ' + rel_desc[1]
     ph_str = ' '.join(ph_str.split())  # remove redundant space

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from .phrase_handler import construct_phrase_annotation_label
+from phrase_handler import construct_phrase_annotation_label
 
 
 class PhraseList(object):

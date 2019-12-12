@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 plt.switch_backend('agg')
 
-from utils.iou import iou_boxes, iou_polygons_masks
-from utils.refvg_loader import RefVGLoader
-from utils import subset as subset_utils
+from iou import iou_boxes, iou_polygons_masks
+from refvg_loader import RefVGLoader
+import subset as subset_utils
 
 
 class Evaluator:
