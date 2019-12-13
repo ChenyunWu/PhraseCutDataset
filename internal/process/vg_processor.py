@@ -7,10 +7,10 @@ from PhraseCutDataset.utils.refvg_loader import RefVGLoader
 
 class VGProcessor(RefVGLoader):
 
-    def __init__(self, split=None, vg_loader=None, obj_filter=False, word_embed=None):
+    def __init__(self, split=None, phrase_handler=None, word_embed=None):
 
-        RefVGLoader.__init__(self, split=split, vg_loader=vg_loader, word_embed=word_embed, obj_filter=obj_filter,
-                             allow_no_att=True)
+        RefVGLoader.__init__(self, split=split, phrase_handler=phrase_handler, word_embed=word_embed,
+                             include_vg_scene_graph=True)
 
         self.phrase_type_stat = {'name': 0, 'attribute': 0, 'relation': 0, 'location': 0, 'verbose': 0}
         self.images = self.vg_loader.images
@@ -394,6 +394,7 @@ class VGProcessor(RefVGLoader):
         If the phrase needs to be changed, record the old phrase to 'original phrase'
         The task (and its phrase_structure) is modified inplace.
         :param task: dict for a single task, with fields 'phrase', 'phrase_structure', 'image_id', 'ann_ids', ...
+        :param verbose:
         :return: a list of which fields are modified, except the 'relation_descriptions'
         """
         if verbose:
