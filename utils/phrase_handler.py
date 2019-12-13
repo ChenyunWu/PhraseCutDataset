@@ -12,7 +12,7 @@ class PhraseHandler(object):
         self.phrase_length = phrase_length
 
         # load cat/att/rel count data
-        print('Loader loading nar_count: %s' % name_att_rel_count_fpath)
+        print('PhraseHandler loading nar_count: %s' % name_att_rel_count_fpath)
         with open(name_att_rel_count_fpath, 'r') as f:
             count_info = json.load(f)
             self.cat_count_list = count_info['cat']  # list of (cat_name, count), count from high to low

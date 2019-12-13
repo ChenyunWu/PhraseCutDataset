@@ -137,10 +137,12 @@ you can simply use a symbolic link.
 that are used in our dataset (around 70\% of Visual Genome images). 
 It also provides options to only download images in certain splits. 
 We use the "requests" python package.
-    ```
+    ```bash
     pip install requests
     cd PhraseCutDataset
     python download_images.py
+    # if you only want to download the miniv split:
+    python download_images.py -s miniv
     ```
 
 - Another option is to download all the images from 
@@ -148,8 +150,8 @@ We use the "requests" python package.
 You will need images from Version 1.2 in both part1 (9.2GB) and part2 
 (5.47GB).
 
-## Explore the dataset
-See [dataset_explore.ipynb]
+## Explore the dataset 
+[dataset_demo.ipynb] shows the usage of our data loader and displays example annotations in our dataset.
 
 ## Evaluation
 Input predictions, we report:
@@ -158,62 +160,33 @@ Input predictions, we report:
 - Box / mask accuracy: percentage of predictions where the box / mask IoU is above a threshold
 (Thresholds: 0.3, 0.5, 0.7, 0.9)
 
-The statistics can be reported on each subset separately.
-
-### How to run the evaluation:
+The statistics can be reported on each subset separately. See [utils/subset.py] for supported subsets.
 
 
-**Evaluate your own predictor:**
+### Option 1: Save predictions to file, and then evaluate
+- **Save predictions to a numpy file.** 
+It should be a 'dict' of task_id --> binary predicted mask (compressed).
+We provide examples of naive predictors in [utils/predictor_examples.py].
+- **Evaluate.** 
+Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
+The optional 'pred_name' is only used to log results to summary files 
+for the convenience of comparing different methods. 
 
-- Save predictions in a numpy file
-(see example predictors in [utils/predictor_examples.py])
-- Run `python evaluate.py --pred_name=your_pred --pred_path=path/to/your/predictions.npy`
+### Option 2: Evaluate after each task is predicted
 
 
+## Visualization
+Visualize annotations and predictions on an image.
 
-### Supported subsets:
-
-**'all':** All the data
-
-**'c20', 'c100', 'c500', 'c500+', 'c21-100', 'c101-500':**
-Rank all instance categories by their frequencies in our dataset.
-'c100' means all tasks where the described instances are ranked top 100;
-'c500+' means ranked after 500;
-'c21-100' means ranked between 21 and 100.
-
-**'i\_single', 'i\_multi', 'i\_many':**
-The number of instances described by each phrase.
-'i\_single': 1 instance;
-'i\_multi': more than 1 instances;
-'i\_many': more than 4 instances.
-
-**'p\_name', 'p\_att', 'p\_att+', 'p\_rel', 'p\_rel+', 'p\_verbose':**
-Phrase structure when the phrase is generated based on Visual Genome (VG) original boxes.
-\[Note: instance / mask annotations from our dataset are
-NOT used to decide these subsets.\]
-'p\_name': Only the "category name" is enough to distinguish against other VG boxes.
-'p\_att': The phrase contains attributes.
-'p\_att+': Attributes are needed to distinguish against other VG boxes with the same category.
-'p\_rel': The phrase contains relationship descriptions.
-'p\_rel+': Relationship descriptions are needed to distinguish against other VG boxes with the same category.
-'p\_verbose': Cannot distinguish against other VG boxes.
-Used all the annotations of the box to generate the phrase.
-
-**'s\_stuff', 's\_obj':**
-Whether the phrase describes stuff or objects.
-See the list of pre-defined stuff names in [utils/subset.py].
 
 ## Additional utils
 - **Simple predictors**: Example predictors in [utils/predictor_examples.py]
-### Loader
-Load the dataset
-### Visualize
-Visualize annotations and predictions on an image.
-### Data transfer
+- **Loaders**: Load the dataset 
+- **Data transfer**:
 Change representations of boxes, polygons, masks, etc.
-### IoU
+- **IoU**:
 Calculate IoU between boxes, polygons, masks, etc.
-### Subset
+- **Subset**
 Decide qualified subsets for each data sample.  
 
 

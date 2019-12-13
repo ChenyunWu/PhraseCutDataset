@@ -1,3 +1,48 @@
+"""
+Split the dataset into subsets for detailed diagnose. 
+Supported subsets:
+
+'all': All the data
+
+'c_coco': phrases with categories from the 80 coco categories.
+
+'c20', 'c100', 'c500', 'c500+', 'c21-100', 'c101-500':
+Rank all instance categories by their frequencies in our dataset.
+'c100' means all tasks where the described instances are ranked top 100;
+'c500+' means ranked after 500;
+'c21-100' means ranked between 21 and 100.
+
+'i_single', 'i_multi', 'i_many':
+The number of instances described by each phrase.
+'i_single': 1 instance;
+'i_multi': more than 1 instances;
+'i_many': more than 4 instances.
+
+'p_name', 'p_att', 'p_att+', 'p_rel', 'p_rel+', 'p_verbose', 'p_attm', 'p_relm', 'p_att_rel':
+Phrase structure when the phrase is generated based on Visual Genome (VG) original boxes.
+[Note: instance / mask annotations from our dataset are NOT used to decide these subsets.]
+'p_name': Only the "category name" is enough to distinguish against other VG boxes.
+'p_att': The phrase contains attributes.
+'p_att+': Attributes are needed to distinguish against other VG boxes with the same category.
+'p_rel': The phrase contains relationship descriptions.
+'p_rel+': Relationship descriptions are needed to distinguish against other VG boxes with the same category.
+'p_verbose': Cannot distinguish against other VG boxes.
+Used all the annotations of the box to generate the phrase.
+'p_attm': multiple atts in one phrase
+'p_relm': multiple rels in one phrase
+'p_att_rel': one phrase contains both att and rel
+
+'s_stuff', 's_obj': Whether the phrase describes stuff or objects.
+
+'s_small', 's_mid', 's_large': size of target region relative to image size (< 2%, 2-20%, >20%)
+
+'a20', 'a100', 'a200', 'a21-100', 'a101-200', 'a200+': frequency rank of att, similar as those for category
+
+'a_color', 'a_shape', 'a_material', 'a_texture', 'a_state', 'a_adj', 'a_noun', 'a_loc', 'a_count', 'a_bad':
+types of attributes. We have pre-define vocabulary for each type.
+
+"""
+
 import json
 
 subsets = ['all', 'c_coco',
@@ -91,11 +136,11 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
             cond['p_att'] = True
         if len(phrase_structure['attributes']) > 1:
             cond['p_attm'] = True
-        if len(phrase_structure['relations']) > 0:
+        if len(phrase_structure['relation_descriptions']) > 0:
             cond['p_rel'] = True
         if len(phrase_structure['relation_descriptions']) > 1:
             cond['p_relm'] = True
-        if len(phrase_structure['attributes']) > 0 and len(phrase_structure['relations']) > 0:
+        if len(phrase_structure['attributes']) > 0 and len(phrase_structure['relation_descriptions']) > 0:
             cond['p_att_rel'] = True
 
         if phrase_structure['type'] == 'name':
@@ -245,140 +290,3 @@ coco = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 't
         'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse',
         'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
         'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
-
-# refvg_names20 = ['man', 'sky', 'wall', 'building', 'shirt', 'tree', 'grass', 'woman', 'person', 'ground', 'trees',
-#                  'window', 'water', 'table', 'sign', 'head', 'fence', 'floor', 'pole', 'road', 'hair', 'pants',
-#                  'people', 'car', 'door', 'shadow', 'street', 'clouds', 'sidewalk', 'plate', 'chair', 'jacket', 'leg',
-#                  'field', 'line', 'train', 'leaves', 'boy', 'girl', 'snow', 'hand', 'bus', 'background', 'tail', 'face',
-#                  'dog', 'light', 'shorts', 'roof', 'arm', 'cloud', 'cat', 'windows', 'jeans', 'plane', 'umbrella',
-#                  'bench', 'horse', 'bag', 'giraffe', 'food', 'tracks', 'legs', 'glass', 'boat', 'ceiling', 'elephant',
-#                  'truck', 'ear', 'wave', 'house', 'clock', 'beach', 'dirt', 'lines', 'sand', 'bed', 'bowl', 'mirror',
-#                  'pillow', 'surfboard', 'hill', 'motorcycle', 'box', 'top', 'player', 'counter', 'handle', 'board',
-#                  'mountain', 'bear', 'zebra', 'post', 'toilet', 'shelf', 'flowers', 'hat', 'bike', 'wheel', 'pizza',
-#                  'laptop', 'tire', 'ocean', 'wing', 'bush', 'shoes', 'cow', 'reflection', 'sink', 'picture', 'trunk',
-#                  'coat', 'plant', 'bird', 'tower', 'skateboard', 'cabinet', 'airplane', 'desk', 'lamp', 'sheep', 'rock',
-#                  'neck', 'stripe', 'bottle', 'keyboard', 'paper', 'tile', 'seat', 'frame', 'waves', 'kite', 'lights',
-#                  'rocks', 'writing', 'lady', 'buildings', 'screen', 'railing', 'cup', 'bushes', 'couch', 'suit',
-#                  'blanket', 'uniform', 'vehicle', 'sweater', 'helmet', 'windshield', 'shoe', 'curtain', 'mountains',
-#                  'racket', 'child', 'fork', 'court', 'cars', 'track', 'cake', 'vase', 'letters', 'back', 'dress',
-#                  'knife', 'men', 'towel', 'carpet', 'platform', 'tie', 'edge', 'flower', 'napkin', 'banana', 'bridge',
-#                  'stripes', 'container', 'wheels', 'logo', 'suitcase', 'tray', 'branch', 'van', 'pavement', 'bread',
-#                  'stand', 'computer', 'curb', 'nose', 'rug', 'guy', 'front', 'area', 'plants', 'basket', 'wires',
-#                  'side', 'wire', 'animal', 'cheese', 'branches', 'leaf', 'collar', 'broccoli', 'fur', 'glasses',
-#                  'design', 'engine', 'sandwich', 'mane', 'ears', 'stove', 'wood', 'phone', 't-shirt', 'monitor',
-#                  'backpack', 'surfer', 'cap', 'book', 'pond', 'lid', 'tv', 'signs', 'hands', 'skier', 'poles', 'flag',
-#                  'net', 'foot', 'bicycle', 'spoon', 'bat', 'shore', 'skis', 'meat', 'catcher', 'feet', 'bananas',
-#                  'tiles', 'walkway', 'sleeve', 'fruit', 'part', 'rail', 'cabinets', 'pot', 'cord', 'rope', 'mouth',
-#                  'path', 'ramp', 'body', 'cloth', 'oven', 'gate', 'sauce', 'orange', 'drawer', 'kid', 'eyes', 'doors',
-#                  'crust', 'wetsuit', 'snowboard', 'statue', 'jersey', 'sofa', 'gravel', 'refrigerator', 'tennis court',
-#                  'teddy bear', 'surface', 'apple', 'chairs', 'umpire', 'curtains', 'base', 'corner', 'bricks', 'runway',
-#                  'donut', 'hydrant', 'pipe', 'skirt', 'doorway', 'banner', 'forest', 'distance', 'strap', 'frisbee',
-#                  'luggage', 'pillows', 'lettering', 'stairs', 'vest', 'air', 'vegetables', 'television', 'books',
-#                  'trim', 'blinds', 'room', 'microwave', 'smiling woman', 'river', 'painting', 'words', 'paint',
-#                  'tennis racket', 'balcony', 'shadows', 'animals', 'dish', 'headboard', 'photo', 'white', 'ski',
-#                  'elephants', 'park', 'fridge', 'tree trunk', 'concrete', 'zebras', 'object', 'batter', 'clothes',
-#                  'glove', 'bar', 'jet', 'cover', 'women', 'cart', 'pillar', 'boats', 'purse', 'bottom', 'brick',
-#                  'group', 'stone', 'bun', 'steps', 'paw', 'awning', 'giraffes', 'lake', 'horses', 'outfit', 'graffiti',
-#                  'rack', 'finger', 'crowd', 'baby', 'skateboarder', 'tablecloth', 'structure', 'this', 'ripples',
-#                  'bathroom', 'letter', 'shade', 'scarf', 'arms', 'hills', 'faucet', 'birds', 'stem', 'cushion',
-#                  'street light', 'word', 'hillside', 'street sign', 'slope', 'whiskers', 'weeds', 'store', 'feathers',
-#                  'stick', 'land', 'traffic light', 'sun', 'smoke', 'lettuce', 'parking lot', 'ball', 'string', 'pan',
-#                  'walls', 'gloves', 'tennis player', 'players', 'tent', 'wings', 'carrot', 'sheet', 'tank', 'chain',
-#                  'foam', 'advertisement', 'cows', 'fire hydrant', 'socks', 'case', 'boots', 'bumper', 'train tracks',
-#                  'crosswalk', 'trash can', 'row', 'kitchen', 'column', 'slice', 'log', 'chest', 'metal', 'vegetable',
-#                  'frosting', 'poster', 'stop sign', 'patch', 'mat', 'spot', 'mouse', 'can', 'couple', 'panel', 'city',
-#                  'pattern', 'train car', 'tarmac', 'ski pole', 'skies', 'circle', 'suv', 'airport', 'clothing',
-#                  'tomato', 'carrots', 'vegetation', 'the', 'a', 'number', 'lawn', 'tub', 'label', 'belt', 'sneakers',
-#                  'camera', 'shower', 'umbrellas', 'countertop', 'remote', 'numbers', 'scissors', 'toy', 'vehicles',
-#                  'spots', 'headlights', 'black', 'hot dog', 'fencing', 'salad', 'plates', 'houses', 'dock', 'name',
-#                  'pitcher', 'eye', 'barrier', 'necklace', 'arrow', 'fabric', 'snowboarder', 'oranges', 'sweatshirt',
-#                  'jar', 'boot', 'text', 'spectators', 'doughnut', 'mug', 'crack', 'fireplace', 'sunlight', 'speaker',
-#                  'ladder', 'palm tree', 'display', 'tires', 'hood', 'pictures', 'cement', 'bathtub', 'wine', 'game',
-#                  'papers', 'tarp', 'comforter', 'power lines', 'baseball player', 'holder', 'station', 'border',
-#                  'tank top', 'ledge', 'toothbrush', 'ship', 'stool', 'thumb', 'fingers', 'drawers', 'grill', 'canopy',
-#                  'horizon', 'tennis', 'ribbon', 'kites', 'headlight', 'bucket', 'hoodie', 'cupboard', 'woods',
-#                  'sticker', 'apples', 'piece', 'blue', 'bookshelf', 'sunglasses', 'bottles', 'hole', 'handles',
-#                  'stones', 'bears', 'pocket', 'buttons', 'rails', 'cell phone', 'hay', 'toilet seat', 'counter top',
-#                  'towels', 'dresser', 'shoulder', 'clock tower', 'trail', 'beam', 'mound', 'scooter', 'chicken',
-#                  'toppings', 'rider', 'coffee table', 'apron', 'planes', 'fan', 'onion', 'church', 'lot', 'shrubs',
-#                  'brush', 'racquet', 'utensil', 'foliage', 'flooring', 'beard', 'shrub', 'posts', 'skater', 'pile',
-#                  'cable', 'seats', 'archway', 'propeller', 'items', 'entrance', 'flags', 'pepper', 'light pole', 'skin',
-#                  'bikes', 'donuts', 'hotdog', 'arch', 'sea', 'cutting board', 'boxes', 'pasture', 'bin', 'sock',
-#                  'parking meter', 'billboard', 'outdoors', 'meter', 'paws', 'horns', 'motorbike', 'machine', 'shelves',
-#                  'trains', 'step', 'cellphone', 'planter', 'vent', 'tag', 'kids', 'bedspread', 'tshirt', 'bars',
-#                  'belly', 'sheets', 'tomatoes', 'green', 'children', 'male', 'hose', 'rice', 'egg', 'trailer',
-#                  'wine glass', 'duck', 'yard', 'cab', 'icing', 'decoration', 'rim', 'cone', 'stands', 'section', 'bags',
-#                  'pen', 'boys', 'drink', 'blade', 'steeple', 'square', 'lamp post', 'dugout', 'candle', 'red',
-#                  'benches', 'staircase', 'liquid', 'placemat', 'roadway', 'controller', 'onions', 'straw', 'asphalt',
-#                  'pier', 'bacon', 'dogs', 'ski poles', 'skiers', 'urinal', 'right', 'dishwasher', 'leash', 'blender',
-#                  'baseball bat', 'signal', 'carriage', 'keys', 'plastic', 'cockpit', 'boulder', 'porch', 'horn', 'deck',
-#                  'left', 'dessert', 'lamb', 'wrist', 'sail', 'saucer', 'shoreline', 'surf board', 'saddle', 'he',
-#                  'pepperoni', 'streetlight', 'fruits', 'newspaper', 'cables', 'meal', 'bunch', 'scene', 'footprints',
-#                  'pastry', 'taxi', 'bookcase', 'mud', 'splash', 'sticks', 'fish', 'moss', 'columns', 'blouse', 'crane',
-#                  'strip', 'front leg', 'nightstand', 'markings', 'pool', 'strings', 'button', 'print', 'table cloth',
-#                  'grate', 'potatoes', 'street lamp', 't shirt', 'rod', 'kitten', 'soup', 'computer monitor', 'sleeves',
-#                  'menu', 'beer', 'toilet bowl', 'slab', 'island', 'goat', 'motorcycles', 'intersection', 'girls',
-#                  'driveway', 'topping', 'trash', 'view', 'dome', 'buses', 'art', 'fries', 'watch', 'item', 'tape',
-#                  'cords', 'sneaker', 'eggs', 'garden', 'front wheel', 'cliff', 'forehead', 'wallpaper', 'doll',
-#                  'remote control', 'image', 'pant', 'train station', 'aircraft', 'garage', 'utensils', 'landscape',
-#                  'containers', 'harness', 'traffic', 'clock face', 'crate', 'palm trees', 'enclosure', 'wrapper',
-#                  'bleachers', 'silverware', 'pathway', 'ketchup', 'furniture', 'tee shirt', 'traffic signal',
-#                  'restaurant', 'napkins', 'shower curtain', 'cups', 'band', 'left hand', 'toilet paper', 'train track',
-#                  'zipper', 'bull', 'equipment', 'right leg', 'front tire', 'magazine', 'hooves', 'platter', 'short',
-#                  'peppers', 'juice', 'stop', 'cage', 'day', 'garbage can', 'train engine', 'coffee', 'front legs',
-#                  'greenery', 'two', 'stack', 'sausage', 'stuffed animal', 'pine tree', 'cabin', 'sedan', 'yellow',
-#                  'herd', 'bank', 'light post', 'pad', 'right hand', 'ripple', 'pillars', 'stroller', 'beak', 'crumbs',
-#                  'wrinkles', 'handlebars', 'surfboards', 'lemon', 'mattress', 'dispenser', 'barn', 'block', 'stairway',
-#                  'left arm', 'sailboat', 'spinach', 'divider', 'table top', 'space', 'hedge', 'outside', 'stems',
-#                  'telephone', 'middle', 'cats', 'artwork', 'beans', 'pipes', 'female', 'bow', 'spokes', 'plank',
-#                  'foreground', 'home', 'pebbles', 'support', 'chocolate', 'snout', 'knee', 'power line', 'sunset',
-#                  'wool', 'soil', 'cupcake', 'barrel', 'sandals', 'mouse pad', 'stomach', 'spectator', 'drawing', 'ice',
-#                  'tusk', 'brown', 'ad', 'family', 'trouser', 'mustard', 'straps', 'sculpture', 'lap', 'slats',
-#                  'skate park', 'eyeglasses', 'landing gear', 'bus stop', 'cones', 'trashcan', 'pickle', 'driver',
-#                  'rose', 'marks', 'wipers', 'cabinet door', 'right arm', 'floors', 'trunks', 'freezer', 'highway',
-#                  'spatula', 'center', 'adult', 'necktie', 'railings', 'bicycles', 'water bottle', 'printer', 'shop',
-#                  'light fixture', 'cream', 'doughnuts', 'knees', 'lamp shade', 'toddler', 'material', 'knob',
-#                  'cardboard', 'toast', 'baseball', 'headband', 'two people', 'suitcases', 'potato', 'fountain',
-#                  'bridle', 'spray', 'foil', 'mushrooms', 'covering', 'skyscraper', 'netting', 'paddle', 'she', 'clocks',
-#                  'shed', 'mitt', 'boards', 'cracks', 'ham', 'officer', 'device', 'tree branches', 'map', 'wagon',
-#                  'canoe', 'cucumber', 'tables', 'tunnel', 'bouquet', 'decorations', 'mountain range', 'elbow', 'grapes',
-#                  'french fries', 'left leg', 'roll', 'ring', 'patio', 'drapes', 'ottoman', 'logs', 'mushroom', 'human',
-#                  'puddle', 'pair', 'traffic lights', 'bark', 'handbag', 'veggies', 'stadium', 'lamps', 'candles',
-#                  'slat', 'wake', 'rear', 'audience', 'jeep', 'opening', 'fender', 'shirts', 'knobs', 'notebook',
-#                  'costume', 'soda', 'chandelier', 'ski lift', 'living room', 'guitar', 'wiper', 'lighting', 'shutters',
-#                  'engines', 'vanity', 'inside', 'tip', 'robe', 'overpass', 'card', 'tube', 'mask', 'window sill',
-#                  'chimney', 'stove top', 'bedroom', 'chips', 'quilt', 'lampshade', 'blind', 'zoo', 'stain', 'railroad',
-#                  'bracelet', 'basin', 'moped', 'strawberry', 'airplanes', 'symbol', 'beams', 'blocks', 'visor',
-#                  'armrest', 'feather', 'pasta', 'ice cream', 'slices', 'shrubbery', 'pots', 'sugar', 'greens', 'cattle',
-#                  'noodles', 'cleats', 'vases', 'headphones', 'siding', 'panels', 'shelter', 'pane', 'burner',
-#                  'passengers', 'radiator', 'palm', 'harbor', 'booth', 'calf', 'end', 'lighthouse', 'left ear', 'turf',
-#                  'appliance', 'right ear', 'debris', 'locomotive', 'hotel', 'ducks', 'polar bear', 'fans',
-#                  'pizza slice', 'stage', 'package', 'dishes', 'baseboard', 'kettle', 'mast', 'handlebar', 'steam',
-#                  'toaster', 'milk', 'median', 'color', 'vines', 'fixture', 'back legs', 'stream', 'trucks',
-#                  'toilet lid', 'bowls', 'tree branch', 'mother', 'computer screen', 'arm rest', 'stickers', 'weed',
-#                  'antenna', 'picnic table', 'town', 'stalk', 'handle bars', 'oar', 'license plate', 'roman numerals',
-#                  'strawberries', 'carton', 'gear', 'sprinkles', 'goggles', 'mantle', 'down', 'skyline', 'stop light',
-#                  'telephone pole', 'storefront', 'cheek', 'skiier', 'cabbage', 'it', 'trash bin', 'marking', 'ponytail',
-#                  'shutter', 'wine bottle', 'pieces', 'stump', 'cross', 'back wheel', 'star', 'ski slope', 'cooler',
-#                  'whisker', 'roadside', 'pumpkin', 'twig', 'mark', 'parasail', 'mousepad', 'roses', 'burger', 'cookie',
-#                  'traffic sign', 'range', 'minivan', 'coffee cup', 'pie', 'mulch', 'portion', 'bubbles', 'ropes',
-#                  'caps', 'time', 'biker', 'spire', 'lamppost', 'figure', 'chin', 'calendar', 'street lights', 'toys',
-#                  'steering wheel', 'pack', 'holes', 'sill', 'thigh', 'night stand', 'terrain', 'chains', 'tusks',
-#                  'pineapple', 'magazines', 'policeman', 'window pane', 'seagull', 'market', 'mirrors', 'drain',
-#                  'castle', 'pedestrian', 'street signs', 'set', 'surfers', 'heart', 'designs', 'towel rack', 'balloon',
-#                  'match', 'sign post', 'silver', 'coffee maker', 'bracket', 'teapot', 'place', 'stars', 'teeth',
-#                  'triangle', 'blazer', 'lips', 'beverage', 'objects', 'fence post', 'soap', 'molding', 'trolley',
-#                  'muzzle', 'back tire', 'windshield wiper', 'worker', 'peel', 'bow tie', 'paper plate', 'pedestal',
-#                  'puppy', 'lemons', 'someone', 'sandwiches', 'scale', 'wii', 'brocolli', 'microphone', 'gray', 'tongue',
-#                  'patches', 'wooden', 'end table', 'tool', 'lift', 'handrail', 'corn', 'cuff', 'graphic', 'note',
-#                  'olives', 'jug', 'soap dispenser', 'vine', 'facial hair', 'bikini', 'desert', 'limb', 'watermark',
-#                  'blades', 'police officer', 'piano', 'stuff', 'key', 'front window', 'parrot', 'dots', 'passenger',
-#                  'outlet', 'bristles', 'deer', 'twigs', 'reins', 'diamond', 'feeder', 'grey', 'stall', 'reflections',
-#                  'petal', 'bib', 'shades', 'seeds', 'picture frame', 'cauliflower', 'coaster', 'hedges', 'hats',
-#                  'trousers', 'cans', 'plaque', 'shaker', 'arrows', 'numerals', 'windowsill', 'salt shaker', 'cushions',
-#                  'video games', 'garbage', 'eyebrows', 'claws', 'skiis', 'rain', 'character', 'ski pants', 'stains',
-#                  'spices', 'an', 'large', 'motorcyclist', 'knee pads', 'beanie', 'candy', 'up', 'monkey', 'mannequin',
-#                  'pastries', 'squares', 'french fry', 'ram', 'tissue', 'photographer', 'beads', 'back leg', 'pony',
-#                  'produce', 'goose', 'hot dogs', 'knives', 'nails', 'lanyard', 'sandal', 'air conditioner', 'petals',
-#                  'control', 'tabletop', 'tennis shoe']
-

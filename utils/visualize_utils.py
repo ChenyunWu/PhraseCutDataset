@@ -24,12 +24,11 @@ visualize_colors = {'title': 'black', 'gt_mask': 'Wistia', 'gt_polygons': 'dodge
 
 
 def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=None, title=None, font_size=5,
-               gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None,
-               vg_boxes=None, vg_all_boxes=None, pred_boxes=None, pred_mask=None, pred_scores=None, can_boxes=None,
-               set_colors=None, xywh=True, cbar=None, gray_img=False, img_hw=None, range01=True):
+               gt_mask=None, gt_Polygons=None, gt_polygons=None, gt_boxes=None, gt_all_boxes=None, vg_boxes=None,
+               vg_all_boxes=None, pred_boxes=None, pred_mask=None, pred_scores=None, can_boxes=None, set_colors=None,
+               xywh=True, cbar=None, gray_img=True, img_hw=None, range01=True):
     """
-    Plot the image in ax and the provided annotations. boxes are lists of [x1, y1, x2, y2].
-    Draw less important things first.
+    Plot the image in ax and the provided annotations. Draw less important things first.
     :param ax:
     :param fig: only needed for creating color bar
     :param fig_size: if both ax and fig are None, create ax and fig by this size
@@ -46,11 +45,16 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     :param vg_boxes: vg boxes used to generate the phrase
     :param vg_all_boxes: all boxes from VG (after filtering)
     :param pred_boxes: predicted boxes
-    :param pred_mask: predicted mask. 2D numpy array the same shape as the img
+    :param pred_mask: predicted binary mask. 2D binary numpy array, the same shape as the img or img_hw
+    :param pred_scores: predicted score mask. 2D float numpy array, the same shape as the img or img_hw
     :param can_boxes: candidate boxes
     :param set_colors: change default color by a dict
     :param xywh: whether input boxes are xywh or xyxy
-    :param cbar: which color bar to show. None, 'gt', 'pred', only used when gt_mask / pred_mask is provided
+    :param cbar: which color bar to show. None/'gt'/'pred'. only used when gt_mask/pred_mask/pred_scores is provided.
+    :param gray_img: whether to make the background image grayscale.
+    :param img_hw: if not None, reshape the image to this size. Use only if pred_mask/scores are not in original size.
+                (May make the box scales wrong)
+    :param range01: Only for pred_scores. Whether to force the range of color bar to 0 ~ 1.
     :return: fig
     """
     def modify_color(d):
@@ -70,11 +74,6 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
             fig, ax = plt.subplots(figsize=fig_size)
         else:
             fig, ax = plt.subplots()
-        # ax.set_frame_on(False)
-        # # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
-        # ax.get_xaxis().set_visible(False)
-        # ax.get_yaxis().set_visible(False)
-        # fig.add_axes(ax)
 
     if title is not None:
         ax.set_title(title, color=colors['title'], fontsize=font_size)
@@ -138,7 +137,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
                 c = 'C%d' % (pi % 10)
             else:
                 c = color
-            ax.add_patch(Polygon(polygon, fill=True, alpha=0.5, color=c))
+            ax.add_patch(Polygon(polygon, fill=True, alpha=0.9, color=c))
 
     if vg_boxes is not None:
         for box in vg_boxes:
@@ -160,7 +159,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
                                    linewidth=0.6, linestyle='-', alpha=0.9))
     if pred_mask is not None:
         masked = np.ma.masked_where(pred_mask == 0, pred_mask)
-        p = ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.9, vmin=0, vmax=1.2)
+        ax.imshow(masked, colors['pred_mask'], interpolation='none', alpha=0.9, vmin=0, vmax=1.2)
 
     if pred_scores is not None:
         if range01:
@@ -172,6 +171,7 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
             # cb.ax.tick_params(labelsize=4)
 
     ax.set_frame_on(False)
+    # # ax.set_axis_off() --> DON'T USE THIS! Will still leave blank space for axes
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
@@ -188,7 +188,8 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     gt_Polygons = img_data['gt_Polygons'][task_i]
     gt_boxes = img_data['gt_boxes'][task_i]
     try:
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes, gray_img=True)
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes,
+                         gray_img=True)
         fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:
@@ -202,8 +203,8 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     return True
 
 
-def pred_visualize_to_file(img_data, fig_path, pred_boxlist=None, pred_mask=None, can_boxes=None,
-                           skip_exist=True):
+def pred_visualize_to_file(img_data, fig_path, pred_boxlist=None, pred_boxes=None, pred_mask=None, can_boxes=None,
+                           skip_exist=True, xywh=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300.0
     fig_w = img_data['width'] / 300.0
@@ -214,11 +215,11 @@ def pred_visualize_to_file(img_data, fig_path, pred_boxlist=None, pred_mask=None
         img_hw = None
         xywh = True
         if pred_boxlist is not None:
-            boxes = pred_boxlist.bbox.cpu().numpy(),
+            pred_boxes = pred_boxlist.bbox.cpu().numpy(),
             img_hw = (pred_boxlist.size[1], pred_boxlist.size[0])
             xywh = pred_boxlist.mode == 'xywh'
-        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=boxes, pred_mask=pred_mask,
-                         can_boxes=can_boxes, gray_img=True, img_hw=img_hw, xywh=xywh)
+        fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, pred_boxes=pred_boxes, pred_mask=pred_mask,
+                         can_boxes=can_boxes, xywh=xywh, gray_img=True, img_hw=img_hw)
         fig.savefig(fig_path, dpi=300,  bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:

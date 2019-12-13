@@ -6,7 +6,7 @@ from refvg_loader import RefVGLoader
 from data_transfer import boxes_to_mask, polygons_to_mask
 
 
-def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_gt'):
+def vg_gt_predictor(split='val', eval_img_count=-1, out_path=None):
     """vg boxes used to generate the phrase as the predicted mask"""
     loader = RefVGLoader(split=split, include_vg_scene_graph=True)
     predictions = dict()
@@ -36,7 +36,7 @@ def vg_gt_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/
     return predictions
 
 
-def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/vg_rand'):
+def vg_rand_predictor(split='val', eval_img_count=-1, out_path=None):
     """randomly pick one vg box as the predicted mask"""
     loader = RefVGLoader(split=split, include_vg_scene_graph=True)
     predictions = dict()
@@ -66,7 +66,7 @@ def vg_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refv
     return predictions
 
 
-def ins_rand_predictor(split='val', eval_img_count=-1, out_path='output/eval_refvg/ins_rand'):
+def ins_rand_predictor(split='val', eval_img_count=-1, out_path=None):
     """randomly pick one instance mask as the predicted mask"""
     loader = RefVGLoader(split=split)
     predictions = dict()

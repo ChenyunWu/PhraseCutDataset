@@ -3,11 +3,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-plt.switch_backend('agg')
-
 from iou import iou_boxes, iou_polygons_masks
 from refvg_loader import RefVGLoader
 import subset as subset_utils
+from file_paths import summary_path
+
+plt.switch_backend('agg')
 
 
 class Evaluator:
@@ -125,12 +126,14 @@ class Evaluator:
             result_f = open(os.path.join(save_result_to_path, 'results.txt'), 'w')
             result_f.write(s + '\n')
         if exp_name_in_summary is not None:
+            if not os.path.exists(summary_path):
+                os.makedirs(summary_path)
             if 'mask' in mask_box:
-                summary_mask = open('output/eval_refvg/summary_mask.csv', 'a')
-                summary_subset = open('output/eval_refvg/summary_subset.csv', 'a')
+                summary_mask = open(os.path.join(summary_path, 'summary_mask.csv'), 'a+')
+                summary_subset = open(os.path.join(summary_path, 'summary_subset.csv'), 'a+')
                 subset_summary_str = exp_name_in_summary
             if 'box' in mask_box:
-                summary_box = open('output/eval_refvg/summary_box.csv', 'a')
+                summary_box = open(os.path.join(summary_path, 'summary_box.csv'), 'a+')
 
         task_num = self.evaluated_task_count
 
@@ -176,7 +179,7 @@ class Evaluator:
 
             pred_mask_acc_str = ''
             if 'mask' in mask_box:
-                mean_mask_iou = np.mean(stat[2])
+                mean_mask_iou = float(np.mean(stat[2]))
                 cum_mask_iou = np.sum(stat[3]) * 1.0 / np.sum(stat[4])
 
                 result_str_head += ', mean_mask_iou=%.4f, cum_mask_iou=%.4f' % (mean_mask_iou, cum_mask_iou)

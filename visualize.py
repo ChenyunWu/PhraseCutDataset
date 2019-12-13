@@ -8,10 +8,10 @@ from utils.visualizer import Visualizer
 
 
 def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=None,
-                             gt_plot_path='data/refvg/visualizations', all_task_num=400, subset_task_num=200,
-                             gt_skip_exist=True, pred_skip_exist=True, verbose=True):
-
-    predictions = np.load(pred_eval_path).item()
+                             pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None,
+                             all_task_num=400, subset_task_num=200, gt_skip_exist=True, pred_skip_exist=True,
+                             verbose=True):
+    predictions = np.load(pred_eval_path, allow_pickle=True).item()
     assert isinstance(predictions, dict)
 
     # sample
@@ -48,10 +48,10 @@ def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=Non
 
     # plot
     visualizer = Visualizer(refvg_split=refvg_split, pred_plot_path=os.path.join(out_path, 'pred_plots'),
-                            gt_plot_path=gt_plot_path, pred_skip_exist=pred_skip_exist, gt_skip_exist=gt_skip_exist)
+                            pred_skip_exist=pred_skip_exist, gt_skip_exist=gt_skip_exist)
     for img_id, task_id in to_plot:
-        visualizer.plot_single_task(img_id, task_id, predictions[img_id][task_id], pred_bin_tags='pred_mask',
-                                    pred_score_tags='pred_scores', verbose=verbose)
+        visualizer.plot_single_task(img_id, task_id, predictions[img_id][task_id], pred_bin_tags=pred_bin_tags,
+                                    pred_score_tags=pred_score_tags, pred_box_tags=pred_box_tags, verbose=verbose)
 
     # generate html
     html_path = os.path.join(out_path, 'htmls')
@@ -67,11 +67,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--pred_path', type=str, required=True,
                         help='path to the save prediction file, after evaluation.')
-    parser.add_argument('-o', '--save_result_to_path', type=str, default=None, help='path to save output files')
-    parser.add_argument('-g', '--gt_plot_path', type=str, default='data/refvg/visualizations',
-                        help='path to saved gt plots')
+    parser.add_argument('-o', '--out_path', type=str, default=None, help='path to save output files')
     parser.add_argument('-s', '--split', type=str, default='miniv',
-                        help='dataset split to visualize: val, miniv, test, train, val_miniv, etc')
+                        help='dataset split to visualize: val, miniv, test, train, val_miniv, etc. Must match pred.')
     parser.add_argument('-n', '--all_task_num', type=int, default=400,
                         help='Maximum number of tasks to visualize for "all"')
     parser.add_argument('-m', '--sub_task_num', type=int, default=200,
@@ -82,8 +80,8 @@ def main():
         args.out_path = os.path.dirname(args.pred_path)
 
     visualize_from_pred_path(pred_eval_path=args.pred_path, refvg_split=args.split, out_path=args.out_path,
-                             gt_plot_path=args.gt_plot_path, all_task_num=args.all_task_num,
-                             subset_task_num=args.sub_task_num, verbose=True)
+                             pred_bin_tags=['pred_mask'], pred_box_tags=['pred_boxlist'],
+                             all_task_num=args.all_task_num, subset_task_num=args.sub_task_num, verbose=True)
     return
 
 

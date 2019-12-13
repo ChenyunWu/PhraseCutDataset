@@ -4,6 +4,7 @@ import numpy as np
 
 from utils.evaluator import Evaluator
 from utils.predictor_examples import vg_gt_predictor, vg_rand_predictor, ins_rand_predictor
+from utils.file_paths import output_path
 
 
 def evaluate_from_pred_dict(predictions, refvg_split, analyze_subset=True, exp_name_in_summary=None,
@@ -45,8 +46,8 @@ def evaluate_from_pred_dict(predictions, refvg_split, analyze_subset=True, exp_n
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--pred_name', type=str, default='vg_pred', help='name of the predictor to be evaluated:'
-                                                                               'vg_gt, vg_rand, ins_rand')
+    parser.add_argument('-n', '--pred_name', type=str, default='ins_rand',
+                        help='name of the predictor to be evaluated: vg_gt, vg_rand, ins_rand')
     parser.add_argument('-p', '--pred_path', type=str, default=None,
                         help='path to the prediction results. If empty, run the predictor.')
     parser.add_argument('-s', '--split', type=str, default='miniv',
@@ -61,22 +62,26 @@ def main():
         if args.pred_path is not None:
             out_path = os.path.dirname(args.pred_path)
         else:
-            out_path = os.path.join('output/eval_refvg', args.pred_name)
+            out_path = os.path.join(output_path, 'baselines', args.pred_name, args.split)
 
     if not args.pred_path or not os.path.exists(args.pred_path):
-        if args.pred_name.starts_with('vg_gt'):
-            predictions = vg_gt_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
-        elif args.pred_name.starts_with('vg_rand'):
-            predictions = vg_rand_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
-        elif args.pred_name.starts_with('ins_rand'):
-            predictions = ins_rand_predictor(split=args.split, eval_img_count=-1, out_path=out_path)
+        if args.pred_name.startswith('vg_gt'):
+            predictions = vg_gt_predictor(split=args.split)
+        elif args.pred_name.startswith('vg_rand'):
+            predictions = vg_rand_predictor(split=args.split)
+        elif args.pred_name.startswith('ins_rand'):
+            predictions = ins_rand_predictor(split=args.split)
         else:
             raise NotImplementedError
     else:
         predictions = np.load(args.pred_path).item()
 
+    if not args.log_to_summary:
+        exp_name = None
+    else:
+        exp_name = args.pred_name
     predictions = evaluate_from_pred_dict(predictions=predictions, refvg_split=args.split,
-                                          analyze_subset=args.analyze_subset, exp_name_in_summary=args.pred_name,
+                                          analyze_subset=args.analyze_subset, exp_name_in_summary=exp_name,
                                           save_result_to_path=out_path, update_predictions=args.save_pred, verbose=True)
     if args.save_pred:
         print('saving %s to %s' % (args.pred_name, out_path))
