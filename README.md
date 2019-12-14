@@ -64,7 +64,7 @@ And download all the dataset files into
 `PhraseCutDataset/data/VGPhraseCut_v0/`.
 
 If you prefer to put the dataset elsewhere, 
-simply change the 'dataset_dir' in [utils/file_paths.py] 
+simply change the 'dataset_dir' in [utils/file_paths.py](utils/file_paths.py) 
 
 ### 1. VGPhraseCut annotations
 All VGPhraseCut annotation files can be downloaded through this
@@ -168,13 +168,13 @@ Input predictions, we report:
 - Box / mask accuracy: percentage of predictions where the box / mask IoU is above a threshold
 (Thresholds: 0.3, 0.5, 0.7, 0.9)
 
-The statistics can be reported on each subset separately. See [utils/subset.py] for supported subsets.
+The statistics can be reported on each subset separately. See [utils/subset.py](utils/subset.py) for supported subsets.
 
 
 ### Option 1: Save predictions to file, and evaluate them afterwards
 - **Save predictions to a numpy file.** 
 It should be a 'dict' of task_id --> binary predicted mask (compressed).
-We provide examples of naive predictors in [utils/predictor_examples.py].
+We provide examples of naive predictors in [utils/predictor_examples.py](utils/predictor_examples.py).
 - **Evaluate.** 
 Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
 The optional 'pred_name' is only used to log results to summary files 
