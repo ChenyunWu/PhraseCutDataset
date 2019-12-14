@@ -201,11 +201,12 @@ Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py
 to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
 
 To try out the evaluation and visualization code on our naive predictors, you can simply run:
-    ``` bash
-    # from the "PhraseCutDataset" directory:
-    python evaluate.py -n ins_rand
-    python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy 
-    ```
+    
+```bash
+# from the "PhraseCutDataset" directory:
+python evaluate.py -n ins_rand
+python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy 
+```
 
 ## Additional utilities
 - [**Simple predictors**](utils/predictor_examples.py): example naive predictors.
