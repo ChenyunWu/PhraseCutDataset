@@ -64,7 +64,7 @@ And download all the dataset files into
 `PhraseCutDataset/data/VGPhraseCut_v0/`.
 
 If you prefer to put the dataset elsewhere, 
-simply change the 'dataset_dir' in [utils/file_paths.py]. 
+simply change the 'dataset_dir' in [utils/file_paths.py] 
 
 ### 1. VGPhraseCut annotations
 All VGPhraseCut annotation files can be downloaded through this
@@ -142,7 +142,7 @@ We suggest having Visual Genome images under
 you can simply use a symbolic link.
 
 - We provide `download_images.py` which only downloads images
-that are used in our dataset (around 70\% of Visual Genome images). 
+that are used in our dataset \(around 70\% of Visual Genome images\). 
 It also provides options to only download images in certain splits. 
 We use the "requests" python package.
     ```bash
@@ -159,7 +159,7 @@ You will need images from Version 1.2 in both part1 (9.2GB) and part2
 (5.47GB).
 
 ## Explore the dataset 
-[dataset_demo.ipynb] shows the usage of our data loader and displays example annotations in our dataset.
+[dataset_demo.ipynb](dataset_demo.ipynb) shows the usage of our data loader and displays example annotations in our dataset.
 
 ## Evaluation
 Input predictions, we report:
@@ -208,7 +208,7 @@ To try out the evaluation and visualization code on our naive predictors, you ca
     ```
 
 ## Additional utilities
-- **Simple predictors**: example naive predictors in [utils/predictor_examples.py]
+- [**Simple predictors**](utils/predictor_examples.py): example naive predictors.
 - **Loaders**: 
 [RefVGLoader](utils/refvg_loader.py) loads the dataset from files. 
 It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases,
