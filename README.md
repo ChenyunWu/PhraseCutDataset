@@ -44,8 +44,16 @@ in the paper. \# TODO: link to the paper.
 
 
 
-## Citation
+## Links
+[Webpage](https://people.cs.umass.edu/~chenyun/phrasecut/)
+
 \# TODO: link to the paper.
+
+## requirements
+- python:3.7
+- requests
+- matplotlib
+
 
 ## Download the dataset
 We suggest you clone this repository to folder `PhraseCutDataset`:
@@ -97,11 +105,11 @@ following keys:
     - attributes: list of attributes as a list of strings    
     - relation_ids: list of relationship ids from Visual Genome
     - relation_descriptions: list of relation_descriptions. 
-    Each relation_description is a tuple of two elements: 
-    string for the predicate, string (name) for the supporting object
+      Each relation_description is a tuple of two elements: 
+      string for the predicate, string (name) for the supporting object
     - type: name (category name is unique), 
-    attribute (att+name is unique), 
-    relation (name+relation is unique), verbose (not unique)
+      attribute (att+name is unique), 
+      relation (name+relation is unique), verbose (not unique)
 
 #### (Optional) Visual Genome scene graph data:
 - `scene_graphs_train.json`(486.1MB)
@@ -163,31 +171,57 @@ Input predictions, we report:
 The statistics can be reported on each subset separately. See [utils/subset.py] for supported subsets.
 
 
-### Option 1: Save predictions to file, and then evaluate
+### Option 1: Save predictions to file, and evaluate them afterwards
 - **Save predictions to a numpy file.** 
 It should be a 'dict' of task_id --> binary predicted mask (compressed).
 We provide examples of naive predictors in [utils/predictor_examples.py].
 - **Evaluate.** 
 Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
 The optional 'pred_name' is only used to log results to summary files 
-for the convenience of comparing different methods. 
+for the convenience of comparing different methods.
 
 ### Option 2: Evaluate after each task is predicted
+Saving all the prediction results to a file can take up a lot of space and time. 
+We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after each task is predicted,
+so that predictions on previous tasks do not need to be saved.
+
+First initialize an evaluator, 
+then enumerate over the tasks and call 'evaluator.eval_single_img\(...\)' after predicting on each referring phrase,
+finally call 'evaluator.analyze_stats\(...\)' to get the final evaluation results.
+See the 'evaluate_from_pred_dict' function in [evaluate.py] as an example.
 
 
 ## Visualization
-Visualize annotations and predictions on an image.
+We provide a tool to visualize prediction results in html files, 
+align with ground-truth and \(optionally\) other baselines.
+Run `python visualize.py -p path/to/your/predictions.npy`, 
+and the visualizations will be created in the same directory.
 
+Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py) 
+to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
 
-## Additional utils
-- **Simple predictors**: Example predictors in [utils/predictor_examples.py]
-- **Loaders**: Load the dataset 
-- **Data transfer**:
-Change representations of boxes, polygons, masks, etc.
-- **IoU**:
-Calculate IoU between boxes, polygons, masks, etc.
-- **Subset**
-Decide qualified subsets for each data sample.  
+To try out the evaluation and visualization code on our naive predictors, you can simply run:
+    ``` bash
+    # from the "PhraseCutDataset" directory:
+    python evaluate.py -n ins_rand
+    python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy 
+    ```
+
+## Additional utilities
+- **Simple predictors**: example naive predictors in [utils/predictor_examples.py]
+- **Loaders**: 
+[RefVGLoader](utils/refvg_loader.py) loads the dataset from files. 
+It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases,
+and (optionally) [VGLoader](utils/vg_loader.py) to load Visual Genome scene graphs.
+- [**ThreshBinSearcher**](utils/find_thresh.py): 
+efficiently searches the thresholds on final prediction scores 
+given the overall percentage of pixels predicted as the referred region. 
+- [**Data transfer**](utils/data_transfer.py):
+changes representations of boxes, polygons, masks, etc.
+- [**IoU**](utils/iou.py):
+calculates IoU between boxes, polygons, masks, etc.
+- [**Subset**](utils/subset.py):
+decides qualified subsets for each task (phrase-region pair).  
 
 
 
