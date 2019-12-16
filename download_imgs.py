@@ -37,8 +37,8 @@ def download_images(path=None, splits='train_val_test_miniv'):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--split', type=str, default='',
-                        help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc')
-    parser.add_argument('-p', '--path', type=str, default=None, help='output path for images')
+                        help='dataset split to download: val, miniv, test, train, val_miniv, etc')
+    parser.add_argument('-p', '--path', type=str, default=None, help='save downloaded images to path')
     args = parser.parse_args()
 
     download_images(args.path, args.split)
