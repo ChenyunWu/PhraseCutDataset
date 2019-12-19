@@ -17,14 +17,14 @@ def download_annotations(splits, download_sg=False, download_skip=False):
         'name_att_rel_count': 'https://drive.google.com/uc?id=1iDmxDa3Aj_c47mZmvVTyeGq4pCv7EWj_',
         'img_info': 'https://drive.google.com/uc?id=1BDWBLV1FdKNnCtTX4hIlnKrqc3KOKp6X',
         'refer_miniv': 'https://drive.google.com/uc?id=1S9vJl3KnE1uySH-bCYfC8bq1BWz-a1Ny',
-        'refer_test': 'https://drive.google.com/open?id=17JW1yfAF43M5Q2CVPxSoPIfOsUjU7xHP',
-        'refer_train': 'https://drive.google.com/open?id=1yuQz4S5ON7kf9TZa9tFnMjMFqwOlTomv',
-        'refer_val': 'https://drive.google.com/open?id=1J5GFEhN3z0_LiGOI8tQSRLSwsq4ph9RF',
-        'scene_graphs_train': 'https://drive.google.com/open?id=1oGkrOyDgGzkJlA4Ea1MiU0hBbROu-kZx',
-        'scene_graphs_val': 'https://drive.google.com/open?id=1su1szG3UZhLLChl9VYifJ3HTrxSJBA5A',
-        'scene_graphs_test': 'https://drive.google.com/open?id=1MdsoNtIkc-vyHGuKlG0XrMGCe8HGEIaY',
-        'scene_graphs_miniv': 'https://drive.google.com/open?id=1ioYj5Lq-a2m0yaaV7wcPVVfv-npNJXbZ',
-        'skip': 'https://drive.google.com/open?id=16bil5jCmDXJz5hGKTypWwiBPjRRSqetA'
+        'refer_test': 'https://drive.google.com/uc?id=17JW1yfAF43M5Q2CVPxSoPIfOsUjU7xHP',
+        'refer_train': 'https://drive.google.com/uc?id=1yuQz4S5ON7kf9TZa9tFnMjMFqwOlTomv',
+        'refer_val': 'https://drive.google.com/uc?id=1J5GFEhN3z0_LiGOI8tQSRLSwsq4ph9RF',
+        'scene_graphs_train': 'https://drive.google.com/uc?id=1oGkrOyDgGzkJlA4Ea1MiU0hBbROu-kZx',
+        'scene_graphs_val': 'https://drive.google.com/uc?id=1su1szG3UZhLLChl9VYifJ3HTrxSJBA5A',
+        'scene_graphs_test': 'https://drive.google.com/uc?id=1MdsoNtIkc-vyHGuKlG0XrMGCe8HGEIaY',
+        'scene_graphs_miniv': 'https://drive.google.com/uc?id=1ioYj5Lq-a2m0yaaV7wcPVVfv-npNJXbZ',
+        'skip': 'https://drive.google.com/uc?id=16bil5jCmDXJz5hGKTypWwiBPjRRSqetA'
     }
 
     if not os.path.exists(dataset_dir):
