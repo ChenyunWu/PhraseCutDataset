@@ -21,13 +21,13 @@
 
 ## Introduction
 VGPhraseCut Dataset is aimed for the problem of segmenting anything on 
-a image based on a regional description phrase.
+an image based on a regional description phrase.
 
 The dataset is collected based on 
 [Visual Genome](https://visualgenome.org/).
 It consists of 348,233 phrase-region pairs. 
 Each phrase contains explicit annotations of which words describe 
-category names, attributes, and relationships with other things 
+the category name, attributes, and relationships with other things 
 in the image respectively.
 The corresponding region described by the phrase is a binary 
 segmentation mask on the image.
@@ -50,14 +50,20 @@ in the paper. \# TODO: link to the paper.
 \# TODO: link to the paper.
 
 ## requirements
-- python:3.7
+- python 3
 - requests
+- gdown
 - matplotlib
+
+Install requirements by runing:
+```bash
+pip install requests gdown matplotlit
+```
 
 
 ## Download the dataset
 We suggest you clone this repository to folder `PhraseCutDataset`:
-```
+```bash
 git clone git@github.com:ChenyunWu/PhraseCutDataset.git
 ```
 And download all the dataset files into 
@@ -66,8 +72,38 @@ And download all the dataset files into
 If you prefer to put the dataset elsewhere, 
 simply change the 'dataset_dir' in [utils/file_paths.py](utils/file_paths.py) 
 
-### 1. VGPhraseCut annotations
-All VGPhraseCut annotation files can be downloaded through this
+### Downloader
+We provide [download_dataset.py](download_dataset.py) for downloading the whole dataset.
+Below are examples of using it.
+
+- To download only the 'miniv' subset, run: 
+    ```bash
+    python download_dataset.py -s miniv
+    ```
+- To download the whole dataset, run: (downloading all the images may take a long time)
+    ```bash
+    python download_dataset.py
+    ```
+- To download only annotations and skip Visual Genome images, run: 
+(Use this if you already have Visual Genome images saved in your machine, 
+or you prefer downloading the whole Visual Genome set from 
+[Visual Genome Website](https://visualgenome.org/api/v0/api_home.html).
+We use images from Visual Genome Version 1.2. 
+You will need images in both part1 (9.2GB) and part2 (5.47GB).
+You may create a symbolic link at `PhraseCutDataset/data/VGPhraseCut_v0/images/`)
+    ```bash
+    python download_dataset.py --download_img 0
+    ```
+- To download the whole dataset together with Visual Genome scene graph annotations on images we used,
+and phrases skipped by annotators during our dataset collection:
+(Use this only if you want to use Visual Genome scene graph annotations on our dataset,
+or if you are interested in skipped phrases.)
+    ```bash
+    python download_dataset.py --download_graph 1 --download_skip 1
+    ```
+
+### VGPhraseCut annotations data structure
+All VGPhraseCut annotation files are shared through this
 [Google Drive link](https://drive.google.com/drive/folders/1oxRFGV_JHZO6dZSpeBSXNf9J_VLCkgL0?usp=sharing). 
 
 #### Metadata:
@@ -133,30 +169,7 @@ and also **'reason'**: the reason why it is skipped,
 where the annotator got to choose from "Wrong Description", 
 "Not in Image", "Ambiguous Region", "Difficult to Select" and "Other".
 
-### 2. Visual Genome images
-All images used in our dataset are from Visual Genome.
-We suggest having Visual Genome images under 
-`PhraseCutDataset/data/VGPhraseCut_v0/images/`.
 
-- If you already have Visual Genome images downloaded, 
-you can simply use a symbolic link.
-
-- We provide `download_images.py` which only downloads images
-that are used in our dataset \(around 70\% of Visual Genome images\). 
-It also provides options to only download images in certain splits. 
-We use the "requests" python package.
-    ```bash
-    pip install requests
-    cd PhraseCutDataset
-    python download_images.py
-    # if you only want to download the miniv split:
-    python download_images.py -s miniv
-    ```
-
-- Another option is to download all the images from 
-[Visual Genome](https://visualgenome.org/api/v0/api_home.html).
-You will need images from Version 1.2 in both part1 (9.2GB) and part2 
-(5.47GB).
 
 ## Explore the dataset 
 [dataset_demo.ipynb](dataset_demo.ipynb) shows the usage of our data loader and displays example annotations in our dataset.

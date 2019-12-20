@@ -45,6 +45,9 @@ types of attributes. We have pre-define vocabulary for each type.
 
 import json
 
+from file_paths import name_att_rel_count_fpath
+
+
 subsets = ['all', 'c_coco',
            'c20', 'c100', 'c500', 'c21-100', 'c101-500', 'c500+',
            'i_single', 'i_multi', 'i_many',
@@ -56,7 +59,7 @@ subsets = ['all', 'c_coco',
            'p_att_rel'
            ]
 
-with open('data/refvg/amt_result/name_att_rel_count_amt.json', 'r') as f:
+with open(name_att_rel_count_fpath, 'r') as f:
     count_info = json.load(f)
 cat_count_list = count_info['cat']  # list of (cat_name, count), count from high to low
 att_count_list = count_info['att']
