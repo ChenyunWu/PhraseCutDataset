@@ -20,42 +20,34 @@
 </table>
 
 ## Introduction
-VGPhraseCut Dataset is aimed for the problem of segmenting anything on 
-an image based on a regional description phrase.
+VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase.
 
-The dataset is collected based on 
-[Visual Genome](https://visualgenome.org/).
-It consists of 348,233 phrase-region pairs. 
-Each phrase contains explicit annotations of which words describe 
-the category name, attributes, and relationships with other things 
-in the image respectively.
-The corresponding region described by the phrase is a binary 
-segmentation mask on the image.
+The dataset is collected based on [Visual Genome](https://visualgenome.org/).
+
+It contains 348,233 phrase-region pairs. 
+Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively.
+The corresponding region described by the phrase is a binary segmentation mask on the image.
 
 Our dataset consists of 348,233 phrases across 77,262 images. 
 This roughly covers 70\% of the images in Visual Genome.
 We split the dataset into 308,893 phrases (71,354 images) for training, 
 20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. 
-We also provide an miniv split with 20 images 
-for the convenience of debugging.
+For the convenience of debugging, we have a 'miniv' split with only 20 images, which are randomly sampled from the validatoin split.
 
-More dataset statistics and data collection pipeline can be found
-in the paper. \# TODO: link to the paper.
-
-
+More dataset statistics and data collection pipeline can be found in the paper. \# TODO: link to the paper.
 
 ## Links
 [Webpage](https://people.cs.umass.edu/~chenyun/phrasecut/)
 
 \# TODO: link to the paper.
 
-## requirements
+## Requirements
 - python 3
 - requests
 - gdown
 - matplotlib
 
-Install requirements by runing:
+Assuming you already have python 3 installed, you can install  the remaining requirements with 'pip':
 ```bash
 pip install requests gdown matplotlit
 ```
@@ -66,67 +58,60 @@ We suggest you clone this repository to folder `PhraseCutDataset`:
 ```bash
 git clone git@github.com:ChenyunWu/PhraseCutDataset.git
 ```
-And download all the dataset files into 
-`PhraseCutDataset/data/VGPhraseCut_v0/`.
+And download all the dataset files into `PhraseCutDataset/data/VGPhraseCut_v0/`.
 
-If you prefer to put the dataset elsewhere, 
-simply change the 'dataset_dir' in [utils/file_paths.py](utils/file_paths.py) 
+If you prefer to put the dataset elsewhere, simply change the 'dataset_dir' in [utils/file_paths.py](utils/file_paths.py) 
 
 ### Downloader
 We provide [download_dataset.py](download_dataset.py) for downloading the whole dataset.
-Below are examples of using it.
+Using the argument `--split` (or `-s`),  you can specify which split(s) you want to download.
+We also provide the following argment settings to specify what annotations you want to download:
 
-- To download only the 'miniv' subset, run: 
-    ```bash
-    python download_dataset.py -s miniv
-    ```
-- To download the whole dataset, run: (downloading all the images may take a long time)
-    ```bash
-    python download_dataset.py
-    ```
-- To download only annotations and skip Visual Genome images, run: 
-(Use this if you already have Visual Genome images saved in your machine, 
-or you prefer downloading the whole Visual Genome set from 
-[Visual Genome Website](https://visualgenome.org/api/v0/api_home.html).
-We use images from Visual Genome Version 1.2. 
-You will need images in both part1 (9.2GB) and part2 (5.47GB).
-You may create a symbolic link at `PhraseCutDataset/data/VGPhraseCut_v0/images/`)
-    ```bash
-    python download_dataset.py --download_img 0
-    ```
-- To download the whole dataset together with Visual Genome scene graph annotations on images we used,
-and phrases skipped by annotators during our dataset collection:
-(Use this only if you want to use Visual Genome scene graph annotations on our dataset,
-or if you are interested in skipped phrases.)
-    ```bash
-    python download_dataset.py --download_graph 1 --download_skip 1
-    ```
+- `--download_refer` (default 1): the referring annotations: phrases and corresponding regions
+- `--download_img` (default 1): the images used in our dataset. 
+- You can set it to 0 if you already have Visual Genome images saved in your machine, or you prefer downloading the whole Visual Genome image set from [Visual Genome Website](https://visualgenome.org/api/v0/api_home.html).
+We use ~70\% of  images from Visual Genome Version 1.2. You will need images in both part1 (9.2GB) and part2 (5.47GB). You may create a symbolic link at `PhraseCutDataset/data/VGPhraseCut_v0/images/`)
+- `--download_graph` (default 0):  Visual Genome scene graph annotations on images  used in our dataset
+- `--download_skip` (default 0):  phrases skipped by annotators during our dataset collection
 
-### VGPhraseCut annotations data structure
-All VGPhraseCut annotation files are shared through this
-[Google Drive link](https://drive.google.com/drive/folders/1oxRFGV_JHZO6dZSpeBSXNf9J_VLCkgL0?usp=sharing). 
+Below are some examples of using the downloader.
+```bash
+# To download only the 'miniv' subset: 
+python download_dataset.py -s miniv
 
-#### Metadata:
+# To download only the 'val' and 'test' subset: 
+python download_dataset.py -s val_test
+
+# To download the whole dataset: 
+# (downloading all the images requires ~11G disk space and may take a long time)
+python download_dataset.py
+
+# To download the whole dataset except the images:
+python download_dataset.py --download_img 0
+
+#To download the whole dataset together with Visual Genome scene graph annotations, and phrases skipped by annotators during our dataset collection:
+python download_dataset.py --download_graph 1 --download_skip 1
+```
+
+### Annotation data structure
+All VGPhraseCut annotation files are shared through this[Google Drive link](https://drive.google.com/drive/folders/1oxRFGV_JHZO6dZSpeBSXNf9J_VLCkgL0?usp=sharing). 
+
+#### 1. Metadata:
 - `image_data_split3000.json`(15.8MB): 
 List of image information from Visual Genome.
-For each image, there is a 'dict' containing its
-'image_id', 'coco_id', 'flickr_id', 'width', 'height', 'url',
-and also its split in our VGPhraseCut dataset: 
-'split'=train/val/test/miniv.  
+For each image, there is a 'dict' containing its 'image_id', 'coco_id', 'flickr_id', 'width', 'height', 'url', and also its split in our VGPhraseCut dataset: 'split'=train/val/test/miniv.  
 - `name_att_rel_count.json`(348KB):
-List of category names, attributes and relationship predicates 
-in our dataset, together with their frequency.
+List of category names, attributes and relationship predicates in our dataset, together with their frequency.
 
-#### Referring data:
+#### 2. Referring data:
 - `refer_train.json`(399.2MB)
 - `refer_val.json`(46.5MB)
 - `refer_test.json`(46.6MB)
 - `refer_miniv.json`(335KB)
 
 They are separate files for the different splits. 
-Each file contains a list of tasks. 
-Each task stands for a phrase-region pair, organized as a 'dict' with 
-following keys: 
+Each file contains a list of tasks. Each task stands for a phrase-region pair, organized as a 'dict' with following keys: 
+
 - **task_id**: unique id for each phrase-region pair (constructed from image_id and ann_ids)
 - **image_id**: image id from Visual Genome
 - **ann_ids**: all object ids (in Visual Genome) that match with the phrase
@@ -147,27 +132,21 @@ following keys:
       attribute (att+name is unique), 
       relation (name+relation is unique), verbose (not unique)
 
-#### (Optional) Visual Genome scene graph data:
+#### 3. (Optional) Visual Genome scene graph data:
 - `scene_graphs_train.json`(486.1MB)
 - `scene_graphs_val.json`(19.3MB)
 - `scene_graphs_test.json`(19.2MB)
 - `scene_graphs_miniv.json`(116KB)
 
-Only needed if you want to use associated 
-Visual Genome scene graph annotations together with our dataset.
-They are the same as the scene graphs from Visual Genome v1.2,
-with only annotations on images in our dataset.
+Only needed if you want to use associated Visual Genome scene graph annotations together with our dataset.
+They are the same as the scene graphs from Visual Genome v1.2, with only annotations on images in our dataset.
 
 
-#### (Optional) Skipped data:
+#### 4. (Optional) Skipped data:
 - `skip.json`(11MB)
 
-Only needed if you are interested in the phrases 
-skipped by the annotators during data collection.
-We provide 'task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure',
-and also **'reason'**: the reason why it is skipped,
-where the annotator got to choose from "Wrong Description", 
-"Not in Image", "Ambiguous Region", "Difficult to Select" and "Other".
+Only needed if you are interested in the phrases skipped by the annotators during data collection.
+We provide 'task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure', and also **'reason'**: the reason why it is skipped, where the annotator got to choose from "Wrong Description", "Not in Image", "Ambiguous Region", "Difficult to Select" and "Other".
 
 
 
@@ -190,31 +169,23 @@ It should be a 'dict' of task_id --> binary predicted mask (compressed).
 We provide examples of naive predictors in [utils/predictor_examples.py](utils/predictor_examples.py).
 - **Evaluate.** 
 Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
-The optional 'pred_name' is only used to log results to summary files 
-for the convenience of comparing different methods.
+The optional 'pred_name' is only used to log results to summary files for the convenience of comparing different methods.
 
 ### Option 2: Evaluate after each task is predicted
 Saving all the prediction results to a file can take up a lot of space and time. 
-We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after each task is predicted,
-so that predictions on previous tasks do not need to be saved.
+We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after each task is predicted, so that predictions on previous tasks do not need to be saved.
 
-First initialize an evaluator, 
-then enumerate over the tasks and call 'evaluator.eval_single_img\(...\)' after predicting on each referring phrase,
-finally call 'evaluator.analyze_stats\(...\)' to get the final evaluation results.
-See the 'evaluate_from_pred_dict' function in [evaluate.py] as an example.
+First initialize an evaluator, then enumerate over the tasks and call 'evaluator.eval_single_img\(...\)' after predicting on each referring phrase, finally call 'evaluator.analyze_stats\(...\)' to get the final evaluation results.
+See the 'evaluate_from_pred_dict' function in [evaluate.py](evaluate.py) as an example.
 
 
 ## Visualization
-We provide a tool to visualize prediction results in html files, 
-align with ground-truth and \(optionally\) other baselines.
-Run `python visualize.py -p path/to/your/predictions.npy`, 
-and the visualizations will be created in the same directory.
+We provide a tool to visualize prediction results in html files, align with ground-truth and \(optionally\) other baselines.
+Run `python visualize.py -p path/to/your/predictions.npy`, and the visualizations will be created in the same directory.
 
-Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py) 
-to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
+Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py) to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
 
 To try out the evaluation and visualization code on our naive predictors, you can simply run:
-    
 ```bash
 # from the "PhraseCutDataset" directory:
 python evaluate.py -n ins_rand
@@ -224,18 +195,8 @@ python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy
 ## Additional utilities
 - [**Simple predictors**](utils/predictor_examples.py): example naive predictors.
 - **Loaders**: 
-[RefVGLoader](utils/refvg_loader.py) loads the dataset from files. 
-It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases,
-and (optionally) [VGLoader](utils/vg_loader.py) to load Visual Genome scene graphs.
-- [**ThreshBinSearcher**](utils/find_thresh.py): 
-efficiently searches the thresholds on final prediction scores 
-given the overall percentage of pixels predicted as the referred region. 
-- [**Data transfer**](utils/data_transfer.py):
-changes representations of boxes, polygons, masks, etc.
-- [**IoU**](utils/iou.py):
-calculates IoU between boxes, polygons, masks, etc.
-- [**Subset**](utils/subset.py):
-decides qualified subsets for each task (phrase-region pair).  
-
-
-
+[RefVGLoader](utils/refvg_loader.py) loads the dataset from files. It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases, and (optionally) [VGLoader](utils/vg_loader.py) to load Visual Genome scene graphs.
+- [**ThreshBinSearcher**](utils/find_thresh.py): efficiently searches the thresholds on final prediction scores given the overall percentage of pixels predicted as the referred region. 
+- [**Data transfer**](utils/data_transfer.py): changes representations of boxes, polygons, masks, etc.
+- [**IoU**](utils/iou.py): calculates IoU between boxes, polygons, masks, etc.
+- [**Subset**](utils/subset.py): decides qualified subsets for each task (phrase-region pair).  

@@ -12,7 +12,7 @@ def download(url, fpath):
     open(fpath, 'wb').write(myfile.content)
 
 
-def download_annotations(splits, download_sg=False, download_skip=False):
+def download_annotations(splits, download_refer=True, download_sg=False, download_skip=False):
     urls = {
         'name_att_rel_count': 'https://drive.google.com/uc?id=1iDmxDa3Aj_c47mZmvVTyeGq4pCv7EWj_',
         'img_info': 'https://drive.google.com/uc?id=1BDWBLV1FdKNnCtTX4hIlnKrqc3KOKp6X',
@@ -30,13 +30,16 @@ def download_annotations(splits, download_sg=False, download_skip=False):
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
 
+
     gdown.download(urls['name_att_rel_count'], str(name_att_rel_count_fpath), quiet=False)
     gdown.download(urls['img_info'], str(img_info_fpath), quiet=False)
+
     if download_skip:
         gdown.download(urls['skip'], str(skip_fpath), quiet=False)
 
     for s in splits:
-        gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False)
+        if download_refer:
+            gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False)
         if download_sg:
             gdown.download(urls['scene_graphs_%s' % s], str(vg_scene_graph_fpaths[s]), quiet=False)
     return
@@ -65,6 +68,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--split', type=str, default='train_val_test_miniv',
                         help='dataset split to download: val, miniv, test, train, val_miniv, ...')
+    parser.add_argument('--download_refer', type=int, default=1, help='Whether to download the annotations (0 / 1)')
     parser.add_argument('--download_img', type=int, default=1, help='Whether to download the images or not (0 / 1)')
     parser.add_argument('--download_graph', type=int, default=0, help='Whether to download VG scene graph (0 / 1)')
     parser.add_argument('--download_skip', type=int, default=0, help='Whether to download skipped phrases (0 / 1)')
@@ -75,7 +79,8 @@ def main():
         splits = 'train_val_test_miniv'
     splits = splits.split('_')
 
-    download_annotations(splits, download_sg=args.download_graph, download_skip=args.download_skip)
+    download_annotations(splits, download_refer=args.download_refer, download_sg=args.download_graph,
+                         download_skip=args.download_skip)
     download_images(splits)
     return
 
