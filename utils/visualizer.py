@@ -7,7 +7,7 @@ plt.switch_backend('agg')
 import subset as subset_utils
 from visualize_utils import gt_visualize_to_file, pred_visualize_to_file, score_visualize_to_file
 from refvg_loader import RefVGLoader
-from file_paths import gt_plot_path_gray, gt_plot_path_color
+from file_paths import gt_plot_path_gray, gt_plot_path_color, img_fpath
 
 
 html_head_str_formatter = '''
@@ -118,7 +118,7 @@ class Visualizer:
         task_cache_dict['header'] = self._gen_task_html_header(img_data, task_id, task_subsets, task_pred_dict)
 
         # raw
-        fig_path = os.path.join('data/refvg/images/%d.jpg' % img_id)
+        fig_path = os.path.join(img_fpath, '%d.jpg' % img_id)
         task_cache_dict['figs'] = [('raw', fig_path)]
 
         # gt

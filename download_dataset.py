@@ -30,7 +30,6 @@ def download_annotations(splits, download_refer=True, download_sg=False, downloa
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
 
-
     gdown.download(urls['name_att_rel_count'], str(name_att_rel_count_fpath), quiet=False)
     gdown.download(urls['img_info'], str(img_info_fpath), quiet=False)
 

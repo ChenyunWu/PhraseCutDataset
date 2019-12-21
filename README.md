@@ -22,17 +22,13 @@
 ## Introduction
 VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase.
 
-The dataset is collected based on [Visual Genome](https://visualgenome.org/).
-
-It contains 348,233 phrase-region pairs. 
-Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively.
-The corresponding region described by the phrase is a binary segmentation mask on the image.
+The dataset is collected based on [Visual Genome](https://visualgenome.org/).It contains 348,233 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
 Our dataset consists of 348,233 phrases across 77,262 images. 
 This roughly covers 70\% of the images in Visual Genome.
 We split the dataset into 308,893 phrases (71,354 images) for training, 
 20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. 
-For the convenience of debugging, we have a 'miniv' split with only 20 images, which are randomly sampled from the validatoin split.
+For the convenience of debugging, we have a 'miniv' split with only 20 images sampled from the validatoin split.
 
 More dataset statistics and data collection pipeline can be found in the paper. \# TODO: link to the paper.
 
@@ -43,19 +39,21 @@ More dataset statistics and data collection pipeline can be found in the paper. 
 
 ## Requirements
 - python 3
+- numpy
+- matplotlib
 - requests
 - gdown
-- matplotlib
 
 Assuming you already have python 3 installed, you can install  the remaining requirements with 'pip':
 ```bash
-pip install requests gdown matplotlit
+pip install matplotlit numpy requests gdown
 ```
 
 
 ## Download the dataset
-We suggest you clone this repository to folder `PhraseCutDataset`:
-```bash
+We suggest you clone this repository to folder `PhraseCutDataset`: 
+
+```
 git clone git@github.com:ChenyunWu/PhraseCutDataset.git
 ```
 And download all the dataset files into `PhraseCutDataset/data/VGPhraseCut_v0/`.
@@ -89,7 +87,7 @@ python download_dataset.py
 # To download the whole dataset except the images:
 python download_dataset.py --download_img 0
 
-#To download the whole dataset together with Visual Genome scene graph annotations, and phrases skipped by annotators during our dataset collection:
+# To download the whole dataset together with Visual Genome scene graph annotations, and phrases skipped by annotators during our dataset collection:
 python download_dataset.py --download_graph 1 --download_skip 1
 ```
 
