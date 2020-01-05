@@ -10,7 +10,7 @@ from pathlib import Path
 # set up api path
 f_path = Path.resolve(Path(__file__))
 api_path = f_path.parent.parent
-assert api_path.match('*/PhraseCutDataset')
+# assert api_path.match('*/PhraseCutDataset')
 
 # dataset_dir and paths to files
 dataset_dir = api_path.joinpath('data/VGPhraseCut_v0')

@@ -30,17 +30,17 @@ def download_annotations(splits, download_refer=True, download_sg=False, downloa
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
 
-    gdown.download(urls['name_att_rel_count'], str(name_att_rel_count_fpath), quiet=False)
-    gdown.download(urls['img_info'], str(img_info_fpath), quiet=False)
+    gdown.download(urls['name_att_rel_count'], str(name_att_rel_count_fpath), quiet=False, proxy=None)
+    gdown.download(urls['img_info'], str(img_info_fpath), quiet=False, proxy=None)
 
     if download_skip:
-        gdown.download(urls['skip'], str(skip_fpath), quiet=False)
+        gdown.download(urls['skip'], str(skip_fpath), quiet=False, proxy=None)
 
     for s in splits:
         if download_refer:
-            gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False)
+            gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False, proxy=None)
         if download_sg:
-            gdown.download(urls['scene_graphs_%s' % s], str(vg_scene_graph_fpaths[s]), quiet=False)
+            gdown.download(urls['scene_graphs_%s' % s], str(vg_scene_graph_fpaths[s]), quiet=False, proxy=None)
     return
 
 
@@ -53,12 +53,13 @@ def download_images(splits):
     for img in info:
         if img['split'] in splits:
             to_download['%d.jpg' % img['image_id']] = img['url']
-    print('%d imgs to be downloaded' % len(to_download))
+    print('%d imgs to be downloaded. This may take some time.' % len(to_download))
     c = 0
     for fname, url in to_download.items():
         download(url, os.path.join(img_fpath, fname))
         c += 1
-        if c % 100 == 0:
+        d = min(len(to_download) / 10, 20)
+        if c % d == 0:
             print('downloaded %d / %d images' % (c, len(to_download)))
     print('Finished downloading images.')
 
@@ -80,7 +81,8 @@ def main():
 
     download_annotations(splits, download_refer=args.download_refer, download_sg=args.download_graph,
                          download_skip=args.download_skip)
-    download_images(splits)
+    if args.download_img:
+        download_images(splits)
     return
 
 

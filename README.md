@@ -1,38 +1,70 @@
 # VGPhraseCut Dataset
 
 <table width="100%">
-<tr>
-<td><img src="visualizations/gt.jpg", alt="examples" width="800"></td>
-</tr>
+  <tr>Examples from the dataset:</tr>
+  <tr>
+  <td><img src="visualizations/gt.jpg", alt="examples" width="800"></td>
+  </tr>
 </table>
+
 <table width="100%">
-<tr>
-<td> Category names</td>
-<td> Attributes</td>
-<td> Relationship predicates</td>
-</tr>
-<tr>
-<td><img src="visualizations/names200.png", alt="names" width="250"></td>
-<td><img src="visualizations/atts.png", alt="atts" width="250"></td>
-<td><img src="visualizations/rels.png", alt="rels" width="250"></td>
-</tr>
+  <tr>Concepts included in the dataset:</tr>
+  <tr>
+    <td> Category names</td>
+    <td> Attributes</td>
+    <td> Relationship predicates</td>
+  </tr>
+  <tr>
+    <td><img src="visualizations/names200.png", alt="names" width="250"></td>
+    <td><img src="visualizations/atts.png", alt="atts" width="250"></td>
+    <td><img src="visualizations/rels.png", alt="rels" width="250"></td>
+  </tr>
 </table>
 
 ## Introduction
-VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase.
+
+VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase. 
 
 The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 348,233 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
-Our dataset consists of 348,233 phrases across 77,262 images. This roughly covers 70% of the images in Visual Genome. We split the dataset into 308,893 phrases (71,354 images) for training,  20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. For the convenience of debugging, we have a 'miniv' split with only 100 images sampled from the validatoin split. (Note that the files for the 'validation' split don't contain data of the 100 'miniv' images. Specify `split=val_miniv` if you want to use the whole validation set.)
+Our dataset consists of 348,233 phrases across 77,262 images. This roughly covers 70% of the images in Visual Genome. We split the dataset into 308,893 phrases (71,354 images) for training,  20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. For the convenience of debugging, we have a 'miniv' split with only 100 images sampled from the validation split. (Note that the files for the 'validation' split don't contain data of the 100 'miniv' images. Specify `split=val_miniv` if you want to use the whole validation set.)
 
 More dataset statistics and data collection pipeline can be found in the paper. \# TODO: link to the paper.
 
+## Quick Start
+
+ TLDR version to try out the miniv split of our dataset.
+
+```bash
+# install dependencies. Python3 required
+pip install matplotlib numpy requests gdown==3.9
+
+# clone our repo
+git clone git@github.com:ChenyunWu/PhraseCutDataset.git
+cd PhraseCutDataset
+
+# download the miniv split
+python download_dataset.py -s miniv
+
+# evaluate a random guess baseline on miniv
+python evaluate.py -n ins_rand
+
+# visualize the result
+python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy
+
+# Check visualizations at `output/baselines/ins_rand/miniv/htmls/all.html`
+```
+
+You can play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data examples.
+
 ## Links
+
 [Webpage](https://people.cs.umass.edu/~chenyun/phrasecut/)
 
 \# TODO: link to the paper.
 
 ## Requirements
+
 - python 3
 - numpy
 - matplotlib
@@ -41,7 +73,7 @@ More dataset statistics and data collection pipeline can be found in the paper. 
 
 Assuming you already have python 3 installed, you can install  the remaining requirements with 'pip':
 ```bash
-pip install matplotlit numpy requests gdown
+pip install matplotlib numpy requests gdown==3.9
 ```
 
 
@@ -69,10 +101,10 @@ We also provide the following argment settings to specify what annotations you w
 
 Below are some examples of using the downloader.
 ```bash
-# To download only the 'miniv' subset: 
+# To download only the 'miniv' split: 
 python download_dataset.py -s miniv
 
-# To download only the 'val' and 'test' subset: 
+# To download only the 'val' and 'test' splits: 
 python download_dataset.py -s val_test
 
 # To download the whole dataset: 

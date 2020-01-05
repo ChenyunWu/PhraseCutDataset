@@ -9,7 +9,7 @@ from utils.visualizer import Visualizer
 
 def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=None,
                              pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None,
-                             all_task_num=100, subset_task_num=50, gt_skip_exist=True, pred_skip_exist=True,
+                             all_task_num=40, subset_task_num=20, gt_skip_exist=True, pred_skip_exist=True,
                              verbose=True):
     predictions = np.load(pred_eval_path, allow_pickle=True).item()
     assert isinstance(predictions, dict)
@@ -70,9 +70,9 @@ def main():
     parser.add_argument('-o', '--out_path', type=str, default=None, help='path to save output files')
     parser.add_argument('-s', '--split', type=str, default='miniv',
                         help='dataset split to visualize: val, miniv, test, train, val_miniv, etc. Must match pred.')
-    parser.add_argument('-n', '--all_task_num', type=int, default=400,
+    parser.add_argument('-n', '--all_task_num', type=int, default=40,
                         help='Maximum number of tasks to visualize for "all"')
-    parser.add_argument('-m', '--sub_task_num', type=int, default=200,
+    parser.add_argument('-m', '--sub_task_num', type=int, default=20,
                         help='Maximum number of tasks to visualize for each subset')
     args = parser.parse_args()
 
