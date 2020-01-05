@@ -21,13 +21,9 @@
 ## Introduction
 VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase.
 
-The dataset is collected based on [Visual Genome](https://visualgenome.org/).It contains 348,233 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
+The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 348,233 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
-Our dataset consists of 348,233 phrases across 77,262 images. 
-This roughly covers 70\% of the images in Visual Genome.
-We split the dataset into 308,893 phrases (71,354 images) for training, 
-20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. 
-For the convenience of debugging, we have a 'miniv' split with only 20 images sampled from the validatoin split.
+Our dataset consists of 348,233 phrases across 77,262 images. This roughly covers 70% of the images in Visual Genome. We split the dataset into 308,893 phrases (71,354 images) for training,  20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. For the convenience of debugging, we have a 'miniv' split with only 100 images sampled from the validatoin split. (Note that the files for the 'validation' split don't contain data of the 100 'miniv' images. Specify `split=val_miniv` if you want to use the whole validation set.)
 
 More dataset statistics and data collection pipeline can be found in the paper. \# TODO: link to the paper.
 
@@ -66,8 +62,8 @@ We also provide the following argment settings to specify what annotations you w
 
 - `--download_refer` (default 1): the referring annotations: phrases and corresponding regions
 - `--download_img` (default 1): the images used in our dataset. 
-- You can set it to 0 if you already have Visual Genome images saved in your machine, or you prefer downloading the whole Visual Genome image set from [Visual Genome Website](https://visualgenome.org/api/v0/api_home.html).
-We use ~70\% of  images from Visual Genome Version 1.2. You will need images in both part1 (9.2GB) and part2 (5.47GB). You may create a symbolic link at `PhraseCutDataset/data/VGPhraseCut_v0/images/`)
+  - You can set it to 0 if you already have Visual Genome images saved in your machine, or you prefer downloading the whole Visual Genome image set from [Visual Genome Website](https://visualgenome.org/api/v0/api_home.html).
+  We use ~70% of  images from Visual Genome Version 1.2. You will need images in both part1 (9.2GB) and part2 (5.47GB). You may create a symbolic link at `PhraseCutDataset/data/VGPhraseCut_v0/images/`)
 - `--download_graph` (default 0):  Visual Genome scene graph annotations on images  used in our dataset
 - `--download_skip` (default 0):  phrases skipped by annotators during our dataset collection
 
@@ -106,17 +102,17 @@ The statistics can be reported on each subset separately. See [utils/subset.py](
 
 ### Option 1: Save predictions to file, and evaluate them afterwards
 - **Save predictions to a numpy file.** 
-It should be a 'dict' of task_id --> binary predicted mask (compressed).
+It should be a 'dict' of task_id --> binary predicted mask (compressed by `np.packbits(...)`).
 We provide examples of naive predictors in [utils/predictor_examples.py](utils/predictor_examples.py).
 - **Evaluate.** 
 Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
 The optional 'pred_name' is only used to log results to summary files for the convenience of comparing different methods.
 
-### Option 2: Evaluate after each task is predicted
+### Option 2: Evaluate after predicting on each image
 Saving all the prediction results to a file can take up a lot of space and time. 
-We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after each task is predicted, so that predictions on previous tasks do not need to be saved.
+We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after predicting on each image, so that predictions on previous tasks do not need to be saved.
 
-First initialize an evaluator, then enumerate over the tasks and call 'evaluator.eval_single_img\(...\)' after predicting on each referring phrase, finally call 'evaluator.analyze_stats\(...\)' to get the final evaluation results.
+First initialize an evaluator, then enumerate over images and call `evaluator.eval_single_img(...)` after predicting on all referring phrases of each image, finally call `evaluator.analyze_stats(...)` to get the final evaluation results.
 See the 'evaluate_from_pred_dict' function in [evaluate.py](evaluate.py) as an example.
 
 
@@ -144,7 +140,7 @@ python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy
 
 ## Annotation data structure
 
-All VGPhraseCut annotation files are shared through this[Google Drive link](https://drive.google.com/drive/folders/1oxRFGV_JHZO6dZSpeBSXNf9J_VLCkgL0?usp=sharing). 
+All VGPhraseCut annotation files are shared through this [Google Drive link](https://drive.google.com/drive/folders/1oxRFGV_JHZO6dZSpeBSXNf9J_VLCkgL0?usp=sharing). 
 
 ###  Metadata:
 

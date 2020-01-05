@@ -1,4 +1,3 @@
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -135,8 +134,6 @@ class Evaluator:
             if 'box' in mask_box:
                 summary_box = open(os.path.join(summary_path, 'summary_box.csv'), 'a+')
 
-        task_num = self.evaluated_task_count
-
         for subset in subset_utils.subsets:
             if subset not in stats:
                 continue
@@ -152,7 +149,7 @@ class Evaluator:
                 continue
 
             subset_result = dict()
-            result_str_head = '\n%s: count=%d(%.4f)' % (subset, count, count * 1.0 / task_num)
+            result_str_head = '\n%s: count=%d(%.4f)' % (subset, count, count * 1.0 / self.evaluated_task_count)
 
             pred_box_acc_str = ''
             if 'box' in mask_box:
@@ -208,6 +205,20 @@ class Evaluator:
                 result_f.write(result_str)
 
             results[subset] = subset_result
+
+        if self.evaluated_task_count < self.refvg_loader.task_num:
+            print('WARNING: You did not evaluate all the tasks in the %s split.'
+                  'Evaluated %d / %d tasks. %d / %d images.'
+                  % (self.refvg_split, self.evaluated_task_count, self.refvg_loader.task_num,
+                     len(self.evaluated_img_ids), len(self.refvg_loader.img_ids)))
+            if 'all' in results:
+                print('Assuming empty prediction on missing tasks:')
+                if 'mean_mask_iou' in results['all']:
+                    mmiou = results['all']['mean_mask_iou'] * self.evaluated_task_count / self.refvg_loader.task_num
+                    print('Overall mean mask iou on %s: %.4f' % (self.refvg_split, mmiou))
+                if 'mean_box_iou' in results['all']:
+                    mbiou = results['all']['mean_box_iou'] * self.evaluated_task_count / self.refvg_loader.task_num
+                    print('Overall mean box iou on %s: %.4f' % (self.refvg_split, mbiou))
 
         if save_result_to_path is not None:
             result_f.close()

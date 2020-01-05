@@ -9,7 +9,7 @@ from utils.visualizer import Visualizer
 
 def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=None,
                              pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None,
-                             all_task_num=400, subset_task_num=200, gt_skip_exist=True, pred_skip_exist=True,
+                             all_task_num=100, subset_task_num=50, gt_skip_exist=True, pred_skip_exist=True,
                              verbose=True):
     predictions = np.load(pred_eval_path, allow_pickle=True).item()
     assert isinstance(predictions, dict)

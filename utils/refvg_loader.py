@@ -44,6 +44,7 @@ class RefVGLoader(object):
         self.ImgInsBoxes = dict()
         self.ImgInsPolygons = dict()
         self.ImgReferTasks = dict()
+        self.task_num = 0
         for task in ref_tasks:
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
@@ -55,7 +56,7 @@ class RefVGLoader(object):
             self.ImgInsPolygons[img_id] = self.ImgInsPolygons.get(img_id, list()) + task['Polygons']
             task['ins_box_ixs'] = range(len(self.ImgInsBoxes[img_id]) - len(task['instance_boxes']),
                                         len(self.ImgInsBoxes[img_id]))
-
+            self.task_num += 1
         self.img_ids = list(self.ImgInsBoxes.keys())
         self.shuffle()
         self.iterator = 0

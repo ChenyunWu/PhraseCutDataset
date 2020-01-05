@@ -14,17 +14,17 @@ def download(url, fpath):
 
 def download_annotations(splits, download_refer=True, download_sg=False, download_skip=False):
     urls = {
-        'name_att_rel_count': 'https://drive.google.com/uc?id=1iDmxDa3Aj_c47mZmvVTyeGq4pCv7EWj_',
-        'img_info': 'https://drive.google.com/uc?id=1BDWBLV1FdKNnCtTX4hIlnKrqc3KOKp6X',
-        'refer_miniv': 'https://drive.google.com/uc?id=1S9vJl3KnE1uySH-bCYfC8bq1BWz-a1Ny',
-        'refer_test': 'https://drive.google.com/uc?id=17JW1yfAF43M5Q2CVPxSoPIfOsUjU7xHP',
-        'refer_train': 'https://drive.google.com/uc?id=1yuQz4S5ON7kf9TZa9tFnMjMFqwOlTomv',
-        'refer_val': 'https://drive.google.com/uc?id=1J5GFEhN3z0_LiGOI8tQSRLSwsq4ph9RF',
-        'scene_graphs_train': 'https://drive.google.com/uc?id=1oGkrOyDgGzkJlA4Ea1MiU0hBbROu-kZx',
-        'scene_graphs_val': 'https://drive.google.com/uc?id=1su1szG3UZhLLChl9VYifJ3HTrxSJBA5A',
-        'scene_graphs_test': 'https://drive.google.com/uc?id=1MdsoNtIkc-vyHGuKlG0XrMGCe8HGEIaY',
-        'scene_graphs_miniv': 'https://drive.google.com/uc?id=1ioYj5Lq-a2m0yaaV7wcPVVfv-npNJXbZ',
-        'skip': 'https://drive.google.com/uc?id=16bil5jCmDXJz5hGKTypWwiBPjRRSqetA'
+        'name_att_rel_count': 'https://drive.google.com/uc?id=1QbunEpB0l6PXCTVR5L7YsJM7-eNoKjHM',
+        'img_info': 'https://drive.google.com/uc?id=1UmjLJx9BGE9ruOXK1T4iGCYKurY0jNOL',
+        'refer_miniv': 'https://drive.google.com/uc?id=1YkLB6JkwDVoIeRMWde1seTh78jUatWn3',
+        'refer_test': 'https://drive.google.com/uc?id=10DwzLreGip_YijCaxNK-VTQRga7iUUea',
+        'refer_train': 'https://drive.google.com/uc?id=1vMcJhLNOISztGjv9QhFhxZOU96VInddK',
+        'refer_val': 'https://drive.google.com/uc?id=10NJfznceaKeStL03nu0uGDP_jmbsxoRt',
+        'scene_graphs_train': 'https://drive.google.com/uc?id=1NYrM09r1PWtV3kPvUrfO18eOzGT5RL3O',
+        'scene_graphs_val': 'https://drive.google.com/uc?id=1qCxqXguncmnfPHpKmeHmT_5a3xoIogVj',
+        'scene_graphs_test': 'https://drive.google.com/uc?id=1oSQTCPg8-nT9nA8_rCPIcAPa22O0cL0p',
+        'scene_graphs_miniv': 'https://drive.google.com/uc?id=113Z9UK9yaM1veNdKdTFCZwiu53LwWeix',
+        'skip': 'https://drive.google.com/uc?id=1L7j_-9lGk90BuqiQR15W95VQ8frejAfe'
     }
 
     if not os.path.exists(dataset_dir):

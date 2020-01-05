@@ -1,29 +1,5 @@
 import json
-
-
-def split_scene_graph():
-    raw_file = '../data/VisualGenome1.2/scene_graphs.json'
-    info_file = 'data/VGPhraseCut_v0/image_data_split3000.json'
-    splits = ['miniv', 'test', 'val', 'train']
-
-    info = json.load(open(info_file))
-    id_to_split = {img['image_id']: img['split'] for img in info}
-    print(len(id_to_split))
-
-    rel = json.load(open(raw_file))
-    rels = dict()
-    for s in splits:
-        rels[s] = list()
-    for r in rel:
-        img_id = r['image_id']
-        s = id_to_split[img_id]
-        rels[s].append(r)
-
-    for k, v in rels.items():
-        out_fpath = 'data/VGPhraseCut_v0/scene_graphs_%s.json' % k
-        with open(out_fpath, 'w') as f:
-            json.dump(v, f)
-        print(k, len(v), 'saved to %s' % out_fpath)
+import random
 
 
 def slim_ref():
@@ -53,27 +29,27 @@ def slim_ref():
     List of dicts ('task_id', 'image_id', 'ann_ids', 'Polygons', 'instance_boxes', 'phrase', 'phrase_structure')
     - phrase_structure: dict of ('name', 'attributes', 'relation_ids', 'relation_descriptions', 'type')
     """
-    for split in ['miniv', 'val', 'test', 'train']:
-        fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_%s.json' % split
-        ref = json.load(open(fpath))
-        for task in ref:
-            for k in ['iou', 'iop', 'turk_id']:
-                del task[k]
-            ps = task['phrase_structure']
-            rids = [r['relationship_id'] for r in ps['relations']]
-            ps['relation_ids'] = rids
-            del ps['relations']
+    # for split in ['miniv', 'val', 'test', 'train']:
+    fpath = 'data/refvg/amt_result/refer_filtered_instance_refine.json'
+    ref = json.load(open(fpath))
+    for task in ref:
+        for k in ['iou', 'iop', 'turk_id']:
+            del task[k]
+        ps = task['phrase_structure']
+        rids = [r['relationship_id'] for r in ps['relations']]
+        ps['relation_ids'] = rids
+        del ps['relations']
 
-        new_path = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_%s.json' % split
-        with open(new_path, 'w') as f:
-            json.dump(ref, f)
-        print('%s saved.' % new_path)
+    new_path = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+    with open(new_path, 'w') as f:
+        json.dump(ref, f)
+    print('%s saved.' % new_path)
 
 
 def slim_skip():
     """
     Format of skip_vxx.json:
-    List of dicts ('task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure', 'turk_id')
+    List of dicts ('task_id', 'image_id', 'ann_ids', 'skip_reason', 'phrase', 'phrase_structure', 'turk_id', 'boxes')
     - phrase_structure: dict of ('name', 'attributes', 'relations', 'type')
             - relations: list of dict, same as relations from VG: {'subject_id': ann_id (in VG) of the target,
                 should be the same as the first one in ann_ids; 'predicate': string for the relation predicate;
@@ -81,12 +57,11 @@ def slim_skip():
                 'synsets': of the predicate, from VG}
               - type: name (name is unique), attribute (att+name is unique), relation (name+relation is unique),
             verbose (not unique)
-    - iou / iop / turk_id: used only for filtering the data
 
     After slim:
     remove 'turk_id', replace 'relations' with 'relation_ids' in phrase_structure
-    List of dicts ('task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure')
-    - phrase_structure: dict of ('name', 'attributes', 'relation_ids', 'relation_descriptions', 'type')
+    List of dicts ('task_id', 'image_id', 'ann_ids', 'skip_reason', 'phrase', 'phrase_structure', 'boxes')
+    - phrase_structure: dict of ('name', 'attributes', 'relation_ids', 'type')
     """
     skipped = list()
     for v in ['v1.01', 'v1.2', 'v2']:
@@ -108,52 +83,100 @@ def slim_skip():
     print('%s saved.' % new_path)
 
 
-def slim_data():
+def update_split():
     """
-    Update image_data_split3000.json and scene_graphs_train.json: remove train images that are not annotated
+    Update image_data_split3000.json and scene_graphs_train.json:
+        - remove train images that are not annotated (include only images in refer_train and skip_train)
+        - larger miniv with 100 images from val
     """
-
+    # remove train images that are not annotated
     fpath = 'data/VGPhraseCut_v0/refer_train.json'
     ref = json.load(open(fpath))
     train_ids = set()
     for task in ref:
         train_ids.add(task['image_id'])
 
-    with open('data/VGPhraseCut_v0/image_data_split3000.json') as f:
+    skip_f = 'data/VGPhraseCut_v0/skip.json'
+    skip = json.load(open(skip_f))
+    skip_ids = set()
+    for task in skip:
+        skip_ids.add(task['image_id'])
+
+    keep_ids = train_ids.union(skip_ids)
+
+    with open('data/refvg/image_data_split3000.json') as f:
         info = json.load(f)
     to_remove = list()
     for img in info:
-        if img['split'] == 'train' and img['image_id'] not in train_ids:
+        if img['split'] == 'train' and img['image_id'] not in keep_ids:
             to_remove.append(img['image_id'])
 
     new_info = [img for img in info if img['image_id'] not in to_remove]
     print(len(info), len(new_info))
-    with open('data/VGPhraseCut_v0/image_data_split3000_slim.json', 'w') as f:
+
+    val_ids = [img['image_id'] for img in new_info if img['split'] in ['val', 'miniv']]
+    miniv_ids = random.sample(val_ids, 100)
+    for img in new_info:
+        if img['image_id'] in val_ids:
+            img['split'] = 'val'
+        if img['image_id'] in miniv_ids:
+            img['split'] = 'miniv'
+
+    with open('data/refvg/image_data_split3000_100_slim.json', 'w') as f:
         json.dump(new_info, f)
-
-    with open('data/VGPhraseCut_v0/scene_graphs_train.json') as f:
-        sg = json.load(f)
-    new_sg = [img for img in sg if img['image_id'] not in to_remove]
-    print(len(sg), len(new_sg))
-    with open('data/VGPhraseCut_v0/scene_graphs_train_slim.json', 'w') as f:
-        json.dump(new_sg, f)
+    print('data/refvg/image_data_split3000_100_slim.json saved.')
 
 
-def remake_sg_train():
+def split_scene_graph():
     raw_file = '../data/VisualGenome1.2/scene_graphs.json'
-    info_file = 'data/VGPhraseCut_v0/image_data_split3000.json'
+    info_file = 'data/refvg/image_data_split3000_100_slim.json'
+    splits = ['miniv', 'test', 'val', 'train']
 
     info = json.load(open(info_file))
-    train_ids = [img['image_id'] for img in info if img['split'] == 'train']
-    print(len(train_ids))
+    id_to_split = {img['image_id']: img['split'] for img in info}
+    print(len(id_to_split))
 
     rel = json.load(open(raw_file))
-    train_rel = [img for img in rel if img['image_id'] in train_ids]
+    rels = dict()
+    for s in splits:
+        rels[s] = list()
+    for r in rel:
+        img_id = r['image_id']
+        if img_id not in id_to_split:
+            continue
+        s = id_to_split[img_id]
+        rels[s].append(r)
 
-    out_fpath = 'data/VGPhraseCut_v0/scene_graphs_train.json'
-    with open(out_fpath, 'w') as f:
-        json.dump(train_rel, f)
-    print(len(train_rel), 'saved to %s' % out_fpath)
+    for k, v in rels.items():
+        out_fpath = 'data/VGPhraseCut_v0/scene_graphs_%s.json' % k
+        with open(out_fpath, 'w') as f:
+            json.dump(v, f)
+        print(k, len(v), 'saved to %s' % out_fpath)
+
+
+def split_ref():
+    raw_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+    info_file = 'data/refvg/image_data_split3000_100_slim.json'
+    splits = ['miniv', 'test', 'val', 'train']
+
+    info = json.load(open(info_file))
+    id_to_split = {img['image_id']: img['split'] for img in info}
+    print(len(id_to_split))
+
+    rel = json.load(open(raw_file))
+    rels = dict()
+    for s in splits:
+        rels[s] = list()
+    for r in rel:
+        img_id = r['image_id']
+        s = id_to_split[img_id]
+        rels[s].append(r)
+
+    for k, v in rels.items():
+        out_fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_%s.json' % k
+        with open(out_fpath, 'w') as f:
+            json.dump(v, f)
+        print(k, len(v), 'saved to %s' % out_fpath)
 
 
 def test_blind():
@@ -181,4 +204,7 @@ def test_blind():
 
 
 if __name__ == '__main__':
-    remake_sg_train()
+    # slim_ref()
+    # update_split()
+    # split_scene_graph()
+    split_ref()
