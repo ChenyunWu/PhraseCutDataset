@@ -37,7 +37,7 @@ More dataset statistics and data collection pipeline can be found in the paper. 
 
 ```bash
 # install dependencies. Python3 required
-pip install matplotlib numpy requests gdown==3.9
+pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
 
 # clone our repo
 git clone git@github.com:ChenyunWu/PhraseCutDataset.git
@@ -51,11 +51,11 @@ python evaluate.py -n ins_rand
 
 # visualize the result
 python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy
-
-# Check visualizations at `output/baselines/ins_rand/miniv/htmls/all.html`
 ```
 
-You can play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data examples.
+Check visualizations at [output/baselines/ins_rand/miniv/htmls/all.html](output/baselines/ins_rand/miniv/htmls/all.html)
+
+You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data examples.
 
 ## Links
 
@@ -68,12 +68,13 @@ You can play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data e
 - python 3
 - numpy
 - matplotlib
+- pillow
 - requests
 - gdown
 
 Assuming you already have python 3 installed, you can install  the remaining requirements with 'pip':
 ```bash
-pip install matplotlib numpy requests gdown==3.9
+pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
 ```
 
 
