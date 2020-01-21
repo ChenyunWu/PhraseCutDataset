@@ -25,17 +25,26 @@
 
 VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase. 
 
-The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 348,233 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
+The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 345,486 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
-Our dataset consists of 348,233 phrases across 77,262 images. This roughly covers 70% of the images in Visual Genome. We split the dataset into 308,893 phrases (71,354 images) for training,  20,350 (2971 images) for validation, and 18,980 (2937 images) for testing. For the convenience of debugging, we have a 'miniv' split with only 100 images sampled from the validation split. (Note that the files for the 'validation' split don't contain data of the 100 'miniv' images. Specify `split=val_miniv` if you want to use the whole validation set.)
+Our dataset  roughly covers 70% of the images in Visual Genome. We split the dataset into train, validation and test. For the convenience of debugging, we have a subset of validation called 'miniv' with only 100 images. (Note that the files for the 'validation' split don't contain data of the 100 'miniv' images. Specify `split=val_miniv` if you want to use the whole validation set.)
 
-More dataset statistics and data collection pipeline can be found in the paper. \# TODO: link to the paper.
+| split    | all | train | val | test | miniv |
+|----------|:----|-------|------|-----|-------|
+| #images  | 77,262 | 71,354 | 2971 | 2937 | 100 |
+| #phrases | 345,486 | 306,209 | 20,316 | 18,961 | 821 |
+
+More dataset statistics and data collection pipeline details can be found in the paper. \# TODO: link to the paper.
 
 ## Quick Start
 
  TLDR version to try out the miniv split of our dataset.
 
 ```bash
+# [optional]: create conda environment
+conda create -n phrasecut_env python=3.7
+conda activate phrasecut_env
+
 # install dependencies. Python3 required
 pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
 
@@ -47,13 +56,15 @@ cd PhraseCutDataset
 python download_dataset.py -s miniv
 
 # evaluate a random guess baseline on miniv
-python evaluate.py -n ins_rand
+python evaluate.py -n box_rand
 
 # visualize the result
-python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy
+python visualize.py -p output/baselines/box_rand/miniv/predictions/
 ```
 
-Then you can check visualizations at [output/baselines/ins_rand/miniv/htmls/all.html](output/baselines/ins_rand/miniv/htmls/all.html)
+Prediction results will be saved as PNG images in **output/baselines/box_rand/miniv/predictions/**
+
+Visualizations are organized in **output/baselines/ins_rand/miniv/htmls/all.html**
 
 You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data examples.
 
@@ -61,7 +72,7 @@ You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more d
 
 [Webpage](https://people.cs.umass.edu/~chenyun/phrasecut/)
 
-\# TODO: link to the paper.
+Paper on Arxiv #TODO
 
 ## Requirements
 
@@ -72,7 +83,15 @@ You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more d
 - requests
 - gdown
 
-Assuming you already have python 3 installed, you can install  the remaining requirements with 'pip':
+We recommend creating a new conda environment for this project. Conda can be installed through [this link](https://docs.conda.io/en/latest/miniconda.html).
+
+```bash
+conda create -n phrasecut_env
+conda activate phrasecut_env
+```
+
+You can install  the remaining requirements with 'conda' or  'pip':
+
 ```bash
 pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
 ```
@@ -124,43 +143,43 @@ python download_dataset.py --download_graph 1 --download_skip 1
 [dataset_demo.ipynb](dataset_demo.ipynb) shows the usage of our data loader and displays example annotations in our dataset.
 
 ## Evaluation
-Given predicted regions of each referring phrase , we report:
-- Mean/cumulative box IoU (predicted boxes against ground-truth boxes), if predicted boxes are provided
-- Mean/cumulative mask IoU (predicted binary mask against ground-truth mask), if predicted masks are provided
-- Box / mask accuracy: percentage of predictions where the box / mask IoU is above a threshold
-(Thresholds: 0.3, 0.5, 0.7, 0.9)
+Given predicted regions of each referring phrase , we report: 
+
+1. mean/cumulative mask IoU (Intersect over Union of predicted binary mask against ground-truth mask).
+2. mask accuracy: percentage of predictions where the mask IoU is above a threshold
+   (Thresholds: 0.3, 0.5, 0.7, 0.9)
 
 The statistics can be reported on each subset separately. See [utils/subset.py](utils/subset.py) for supported subsets.
 
+- **Step1: Save predictions to black-and-white PNG images in a folder.** 
 
-### Option 1: Save predictions to file, and evaluate them afterwards
-- **Save predictions to a numpy file.** 
-It should be a 'dict' of task_id --> binary predicted mask (compressed by `np.packbits(...)`).
-We provide examples of naive predictors in [utils/predictor_examples.py](utils/predictor_examples.py).
-- **Evaluate.** 
-Run `python evaluate.py --pred_name=your_method_name --pred_path=path/to/your/predictions.npy`.
-The optional 'pred_name' is only used to log results to summary files for the convenience of comparing different methods.
+  We call each phrase-region pair as a "task", and provide a unique "task_id" for each task. The file name of each image should be "**task_id**.png". The image size should be identical with the input image. Set pixels to "1" (or "white") for your predicted region, and the rest area "0" (or "black").
+  We provide a naive example called [box_rand_predictor](utils/predictor_examples.py).
 
-### Option 2: Evaluate after predicting on each image
-Saving all the prediction results to a file can take up a lot of space and time. 
-We provide the ['Evaluator'](utils/evaluator.py) class to update the evaluation after predicting on each image, so that predictions on previous tasks do not need to be saved.
+- **Step 2: Evaluate.** 
+```bash
+python evaluate.py --split=val --pred_path=path/to/your/prediction/folder --pred_name=your_method_name 
+```
+Make sure to set "split" to the actual split you are predicting. The optional "pred_name" is only used to log results to summary files for the convenience of comparing different methods.
+
+The evalation results will be printed in the console, and saved to a "results.txt" file in the parent directory of your "pred_path".
+
+**Additional option:**
+
+Saving all perdition results can consume a lot of time and space. If you are using Python for your predictor, you can use our ['Evaluator'](utils/evaluator.py) class. It updates the evaluation after predicting on each image, so that predictions on previous images do not need to be saved.
 
 First initialize an evaluator, then enumerate over images and call `evaluator.eval_single_img(...)` after predicting on all referring phrases of each image, finally call `evaluator.analyze_stats(...)` to get the final evaluation results.
-See the 'evaluate_from_pred_dict' function in [evaluate.py](evaluate.py) as an example.
+See the 'evaluate_from_pred_folder' function in [evaluate.py](evaluate.py) as an example.
 
 
 ## Visualization
 We provide a tool to visualize prediction results in html files, align with ground-truth and \(optionally\) other baselines.
-Run `python visualize.py -p path/to/your/predictions.npy`, and the visualizations will be created in the same directory.
+```
+python visualize.py -p path/to/your/prediction/folder
+```
+The visualizations will be created in the parent directory.
 
 Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py) to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
-
-To try out the evaluation and visualization code on 'miniv' split with our naive predictors, you can simply run:
-```bash
-# from the "PhraseCutDataset" directory:
-python evaluate.py -n ins_rand
-python visualize.py -p output/baselines/ins_rand/miniv/pred_eval.npy 
-```
 
 ## Additional utilities
 - [**Simple predictors**](utils/predictor_examples.py): example naive predictors.
@@ -185,17 +204,18 @@ All VGPhraseCut annotation files are shared through this [Google Drive link](htt
 
 ###  Referring data:
 
-- `refer_train.json`(399.2MB)
-- `refer_val.json`(46.5MB)
-- `refer_test.json`(46.6MB)
-- `refer_miniv.json`(335KB)
+- `refer_train.json`(328.4MB) / `refer_input_val.json`(52.9MB)
+- `refer_val.json`(44.1MB) / `refer_input_val.json`(3.3MB)
+- `refer_test.json`(46.1MB) / `refer_input_test.json`(3.2MB) 
+- `refer_miniv.json`(2.2MB)/ `refer_input_miniv.json`(140KB)
 
 They are separate files for the different splits. 
+`refer_xxx.json` files contain all available annotations, while `refer_input_xxx.json` files only keep information valid to use as the input to the task, with ground-truth and additional labels removed. 
 Each file contains a list of tasks. Each task stands for a phrase-region pair, organized as a 'dict' with following keys: 
 
 - **task_id**: unique id for each phrase-region pair (constructed from image_id and ann_ids)
 - **image_id**: image id from Visual Genome
-- **ann_ids**: all object ids (in Visual Genome) that match with the phrase
+- **ann_ids**: all object ids (in Visual Genome) that match with the phrase.
 - **instance_boxes**: list of referred instance boxes (xywh format)
 - **Polygons**: list of "instance_polygons", same length as instance_boxes. 
   "instance_polygons": list of "polygon"s for a single instance. 
@@ -213,12 +233,14 @@ Each file contains a list of tasks. Each task stands for a phrase-region pair, o
       attribute (att+name is unique), 
       relation (name+relation is unique), verbose (not unique)
 
+`refer_input_xxx.json` contains: task_id, image_id, phrase, phrase_structure (name, attributes, relation_descriptions).
+
 ###  (Optional) Visual Genome scene graph data:
 
-- `scene_graphs_train.json`(486.1MB)
-- `scene_graphs_val.json`(19.3MB)
+- `scene_graphs_train.json`(486.9MB)
+- `scene_graphs_val.json`(18.6MB)
 - `scene_graphs_test.json`(19.2MB)
-- `scene_graphs_miniv.json`(116KB)
+- `scene_graphs_miniv.json`(727KB)
 
 Only needed if you want to use associated Visual Genome scene graph annotations together with our dataset.
 They are the same as the scene graphs from Visual Genome v1.2, with only annotations on images in our dataset.

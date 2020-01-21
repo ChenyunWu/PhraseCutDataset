@@ -183,7 +183,7 @@ class Visualizer:
                     os.makedirs(out_path)
                 fig_path = os.path.join(out_path, fig_name)
                 is_new_plot = pred_visualize_to_file(img_data, fig_path=fig_path, pred_boxlist=pred_boxlist,
-                                                     pred_boxes=pred_boxes, xywh=xywh, skip_exist=self.pred_skip_exist)
+                                                     pred_boxes=pred_boxes, skip_exist=self.pred_skip_exist)
                 plot_info += 'box-%s:%s;' % (tag, is_new_plot)
                 if tag + '_info' in task_pred_dict:
                     tag += ': ' + task_pred_dict[tag + '_info']

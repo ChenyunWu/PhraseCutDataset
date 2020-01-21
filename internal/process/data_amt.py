@@ -8,7 +8,7 @@ plt.switch_backend('agg')
 from ..utils.iou import iou_boxes_polygons
 
 
-# Used to upload data for Turk annotaion.
+# Used to upload data for Turk annotation.
 def upload_to_db(json_f='data/refvg/turker_prep/phrases_train1000.json', commit=False, start_count=0):
     # input json_f is generated from 'pyutils/visual_genome_python_driver/preprocess.ipynb'
     with open(json_f, 'r') as f:

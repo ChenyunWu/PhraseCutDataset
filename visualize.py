@@ -7,11 +7,64 @@ import utils.subset as subset_utils
 from utils.visualizer import Visualizer
 
 
-def visualize_from_pred_path(pred_eval_path=None, refvg_split=None, out_path=None,
+# def visualize_from_pred_folder(pred_folder=None, refvg_split=None, out_path=None, all_task_num=0, subset_task_num=0,
+#                                gt_skip_exist=True, pred_skip_exist=True, verbose=True):
+#     # TODO
+#
+#     # sample
+#     if subset_task_num > 0:
+#         subsets = subset_utils.subsets
+#     else:
+#         subsets = ['all']
+#     subset_dict = dict()
+#     for s in subsets:
+#         subset_dict[s] = list()
+#
+#     for img_id, img_pred in predictions.items():
+#         for task_id, pred in img_pred.items():
+#             if 'subsets' in pred:
+#                 for subset in pred['subsets']:
+#                     if subset in subset_dict:
+#                         subset_dict[subset].append((img_id, task_id))
+#             else:
+#                 pred['subsets'] = ['all']
+#                 subset_dict['all'].append((img_id, task_id))
+#
+#     to_plot = list()
+#     for subset in subset_utils.subsets:
+#         if subset not in subset_dict:
+#             continue
+#         img_task_ids = subset_dict[subset]
+#         if subset == 'all':
+#             sample_num = all_task_num
+#         else:
+#             sample_num = subset_task_num
+#         if len(img_task_ids) > sample_num:
+#             img_task_ids = random.sample(img_task_ids, sample_num)
+#         to_plot += img_task_ids
+#
+#     # plot
+#     visualizer = Visualizer(refvg_split=refvg_split, pred_plot_path=pred_folder,
+#                             pred_skip_exist=pred_skip_exist, gt_skip_exist=gt_skip_exist)
+#     for img_id, task_id in to_plot:
+#         visualizer.plot_single_task(img_id, task_id, predictions[img_id][task_id], pred_bin_tags=pred_bin_tags,
+#                                     pred_score_tags=pred_score_tags, pred_box_tags=pred_box_tags, verbose=verbose)
+#
+#     # generate html
+#     html_path = os.path.join(out_path, 'htmls')
+#     result_path = os.path.join(out_path, 'results.txt')
+#     if not os.path.exists(result_path):
+#         result_path = None
+#
+#     visualizer.generate_html(html_path, enable_subsets=subset_task_num > 0, result_txt_path=result_path)
+#     return
+
+
+def visualize_from_pred_dict(pred_eval_dict_path=None, refvg_split=None, out_path=None,
                              pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None,
                              all_task_num=40, subset_task_num=20, gt_skip_exist=True, pred_skip_exist=True,
                              verbose=True):
-    predictions = np.load(pred_eval_path, allow_pickle=True).item()
+    predictions = np.load(pred_eval_dict_path, allow_pickle=True).item()
     assert isinstance(predictions, dict)
 
     # sample
@@ -71,15 +124,15 @@ def main():
     parser.add_argument('-s', '--split', type=str, default='miniv',
                         help='dataset split to visualize: val, miniv, test, train, val_miniv, etc. Must match pred.')
     parser.add_argument('-n', '--all_task_num', type=int, default=40,
-                        help='Maximum number of tasks to visualize for "all"')
+                        help='Number of tasks to visualize for "all"')
     parser.add_argument('-m', '--sub_task_num', type=int, default=20,
-                        help='Maximum number of tasks to visualize for each subset')
+                        help='Number of tasks to visualize for each subset')
     args = parser.parse_args()
 
     if args.out_path is None:
         args.out_path = os.path.dirname(args.pred_path)
 
-    visualize_from_pred_path(pred_eval_path=args.pred_path, refvg_split=args.split, out_path=args.out_path,
+    visualize_from_pred_dict(pred_eval_dict_path=args.pred_path, refvg_split=args.split, out_path=args.out_path,
                              pred_bin_tags=['pred_mask'], pred_box_tags=['pred_boxlist'],
                              all_task_num=args.all_task_num, subset_task_num=args.sub_task_num, verbose=True)
     return

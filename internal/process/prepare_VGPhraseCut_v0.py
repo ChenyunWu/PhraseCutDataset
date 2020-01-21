@@ -33,12 +33,33 @@ def slim_ref():
     fpath = 'data/refvg/amt_result/refer_filtered_instance_refine.json'
     ref = json.load(open(fpath))
     for task in ref:
-        for k in ['iou', 'iop', 'turk_id']:
-            del task[k]
+        for k in ['iou', 'iop', 'turk_id']:  # missed iob here!
+            if k in task:
+                del task[k]
         ps = task['phrase_structure']
         rids = [r['relationship_id'] for r in ps['relations']]
         ps['relation_ids'] = rids
         del ps['relations']
+
+    new_path = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+    with open(new_path, 'w') as f:
+        json.dump(ref, f)
+    print('%s saved.' % new_path)
+
+
+def slim_ref2():
+    """
+    remove iob, original_phrase
+    """
+    print('slim_ref2')
+    fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+    ref = json.load(open(fpath))
+    for task in ref:
+        for k in ['original_phrase']:
+            if k in task:
+                print('original vs. phrase: "%s" "%s"' % (task['original_phrase'], task['phrase']))
+
+                del task[k]
 
     new_path = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
     with open(new_path, 'w') as f:
@@ -154,8 +175,9 @@ def split_scene_graph():
         print(k, len(v), 'saved to %s' % out_fpath)
 
 
-def split_ref():
-    raw_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+def split_ref(ref_pre='data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup'):
+    print('split_ref')
+    raw_file = ref_pre + '.json'
     info_file = 'data/refvg/image_data_split3000_100_slim.json'
     splits = ['miniv', 'test', 'val', 'train']
 
@@ -173,38 +195,104 @@ def split_ref():
         rels[s].append(r)
 
     for k, v in rels.items():
-        out_fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_%s.json' % k
+        out_fpath = ref_pre + '_%s.json' % k
         with open(out_fpath, 'w') as f:
             json.dump(v, f)
         print(k, len(v), 'saved to %s' % out_fpath)
 
 
-def test_blind():
+def remove_ref_duplicate():
+    print('start of remove_ref_duplicate')
+    old_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim.json'
+    new_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup.json'
+    with open(old_file) as f:
+        refs = json.load(f)
+
+    task_ids = set()
+    dup_ids = list()
+    kept = list()
+
+    for ref in refs:
+        if ref['task_id'] in task_ids:
+            dup_ids.append(ref['task_id'])
+            print('DUPLICATE %d: %s' % (len(dup_ids), ref['task_id']))
+        else:
+            task_ids.add(ref['task_id'])
+            kept.append(ref)
+
+    print('duplicate count: %d; remaining refs: %d' % (len(dup_ids), len(kept)))
+    if len(dup_ids) > 0:
+        with open(new_file, 'w') as f:
+            json.dump(kept, f)
+        print('saved to ', new_file)
+
+
+def ref_verify(ref_path='data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup.json'):
+    print('ref_verify')
+    keys = ['task_id', 'image_id', 'ann_ids', 'Polygons', 'instance_boxes', 'phrase', 'phrase_structure']
+    ps_keys = ['name', 'attributes', 'relation_ids', 'relation_descriptions', 'type']
+    bad = list()
+
+    with open(ref_path) as f:
+        refs = json.load(f)
+
+    for ref in refs:
+        good = (len(ref) == len(keys)) and (len(ref['phrase_structure']) == len(ps_keys))
+        for k in keys:
+            if k not in ref:
+                good = False
+        for k in ps_keys:
+            if k not in ref['phrase_structure']:
+                good = False
+        if not good:
+            bad.append(ref)
+
+    print('bad refs: %d' % len(bad))
+    for i, ref in enumerate(bad):
+        print(i, ref['task_id'])
+        print(list(ref.keys()))
+        print(list(ref['phrase_structure'].keys()))
+        if i > 10:
+            break
+    print('bad refs: %d' % len(bad))
+
+
+def input_only():
     """
-    Format of refer_filtered_instance_refine_slim_xxx.json:
+    Format of refer_filtered_instance_refine_slim_nodup.json:
     List of dicts ('task_id', 'image_id', 'ann_ids', 'Polygons', 'instance_boxes', 'phrase', 'phrase_structure')
     - phrase_structure: dict of ('name', 'attributes', 'relation_ids', 'relation_descriptions', 'type')
 
-    After blind:
+    After input_only:
+    refer_filtered_instance_refine_slim_nodup_input.json
     remove gt annotations: Polygons, instance_boxes
-    List of dicts ('task_id', 'image_id', 'ann_ids', 'phrase', 'phrase_structure')
+    List of dicts ('task_id', 'image_id', 'phrase', 'phrase_structure')
+    - phrase_structure: dict of ('name', 'attributes', 'relation_descriptions')
     """
+    print('input_only')
+    old_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup.json'
+    new_file = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_input.json'
+    with open(old_file) as f:
+        refs = json.load(f)
 
-    for split in ['test']:
-        fpath = 'data/VGPhraseCut_v0/refer_%s.json' % split
-        ref = json.load(open(fpath))
-        for task in ref:
-            for k in ['Polygons', 'instance_boxes']:
-                del task[k]
+    for task in refs:
+        for k in ['Polygons', 'instance_boxes', 'ann_ids']:
+            del task[k]
+        for k in ['relation_ids', 'type']:
+            del task['phrase_structure'][k]
 
-        new_path = 'data/VGPhraseCut_v0/refer_%s_blind.json' % split
-        with open(new_path, 'w') as f:
-            json.dump(ref, f)
-        print('%s saved.' % new_path)
+    with open(new_file, 'w') as f:
+        json.dump(refs, f)
+    print('%s saved.' % new_file)
 
 
 if __name__ == '__main__':
     # slim_ref()
     # update_split()
     # split_scene_graph()
+    # slim_ref2()
+    # remove_ref_duplicate()
+    # ref_verify()
     split_ref()
+    input_only()
+    split_ref(ref_pre='data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_input')

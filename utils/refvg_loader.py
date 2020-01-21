@@ -6,13 +6,13 @@ from phrase_handler import PhraseHandler
 from vg_loader import VGLoader
 from subset import get_subset
 from data_transfer import polygons_to_mask
-from file_paths import img_info_fpath, refer_fpaths
+from file_paths import img_info_fpath, refer_fpaths, refer_input_fpaths
 
 
 class RefVGLoader(object):
 
     def __init__(self, split=None, phrase_handler=None, word_embed=None, allow_no_att=True, allow_no_rel=True,
-                 include_vg_scene_graph=False):
+                 include_vg_scene_graph=False, input_anno_only=False):
 
         if phrase_handler is None:
             phrase_handler = PhraseHandler(word_embed=word_embed)
@@ -35,16 +35,19 @@ class RefVGLoader(object):
 
         print('RefVGLoader loading refer data')
         for s in self.splits:
-            fpath = refer_fpaths[s]
+            if input_anno_only:
+                fpath = refer_input_fpaths[s]
+            else:
+                fpath = refer_fpaths[s]
             print('RefVGLoader loading %s' % fpath)
             with open(fpath, 'r') as f:
                 ref_tasks += json.load(f)
 
         print('RefVGLoader preparing data')
+        self.task_num = 0
+        self.ImgReferTasks = dict()
         self.ImgInsBoxes = dict()
         self.ImgInsPolygons = dict()
-        self.ImgReferTasks = dict()
-        self.task_num = 0
         for task in ref_tasks:
             if not allow_no_att and len(task['phrase_structure']['attributes']) == 0:
                 continue
@@ -52,14 +55,16 @@ class RefVGLoader(object):
                 continue
             img_id = task['image_id']
             self.ImgReferTasks[img_id] = self.ImgReferTasks.get(img_id, list()) + [task]
-            self.ImgInsBoxes[img_id] = self.ImgInsBoxes.get(img_id, list()) + task['instance_boxes']
-            self.ImgInsPolygons[img_id] = self.ImgInsPolygons.get(img_id, list()) + task['Polygons']
-            task['ins_box_ixs'] = range(len(self.ImgInsBoxes[img_id]) - len(task['instance_boxes']),
-                                        len(self.ImgInsBoxes[img_id]))
+            if not input_anno_only:
+                self.ImgInsBoxes[img_id] = self.ImgInsBoxes.get(img_id, list()) + task['instance_boxes']
+                self.ImgInsPolygons[img_id] = self.ImgInsPolygons.get(img_id, list()) + task['Polygons']
+                task['ins_box_ixs'] = range(len(self.ImgInsBoxes[img_id]) - len(task['instance_boxes']),
+                                            len(self.ImgInsBoxes[img_id]))
             self.task_num += 1
-        self.img_ids = list(self.ImgInsBoxes.keys())
+        self.img_ids = list(self.ImgReferTasks.keys())
         self.shuffle()
         self.iterator = 0
+        self.input_anno_only = input_anno_only
         print('RefVGLoader ready.')
 
     def shuffle(self):
@@ -113,11 +118,12 @@ class RefVGLoader(object):
         for task in self.ImgReferTasks[img_id]:
             phrases.append(task['phrase'])
             task_ids.append(task['task_id'])
-            gt_boxes.append(task['instance_boxes'])
             p_structures.append(task['phrase_structure'])
-            gt_Polygons.append(task['Polygons'])
-            img_ins_cats += [task['phrase_structure']['name']] * len(task['instance_boxes'])
-            img_ins_atts += [task['phrase_structure']['attributes']] * len(task['instance_boxes'])
+            if not self.input_anno_only:
+                gt_boxes.append(task['instance_boxes'])
+                gt_Polygons.append(task['Polygons'])
+                img_ins_cats += [task['phrase_structure']['name']] * len(task['instance_boxes'])
+                img_ins_atts += [task['phrase_structure']['attributes']] * len(task['instance_boxes'])
 
         # return data
         data = dict()
@@ -130,30 +136,30 @@ class RefVGLoader(object):
         data['task_ids'] = task_ids
         data['phrases'] = phrases
         data['p_structures'] = p_structures
+        if not self.input_anno_only:
+            data['img_ins_boxes'] = self.ImgInsBoxes[img_id]
+            data['img_ins_Polygons'] = self.ImgInsPolygons[img_id]
+            data['img_ins_cats'] = img_ins_cats
+            data['img_ins_atts'] = img_ins_atts
+            data['gt_Polygons'] = gt_Polygons
+            data['gt_boxes'] = gt_boxes
 
-        data['img_ins_boxes'] = self.ImgInsBoxes[img_id]
-        data['img_ins_Polygons'] = self.ImgInsPolygons[img_id]
-        data['img_ins_cats'] = img_ins_cats
-        data['img_ins_atts'] = img_ins_atts
-        data['gt_Polygons'] = gt_Polygons
-        data['gt_boxes'] = gt_boxes
+            if self.vg_loader is not None:
+                vg_img = self.vg_loader.images[img_id]
+                vg_obj_ids = []
+                vg_boxes = []
 
-        if self.vg_loader is not None:
-            vg_img = self.vg_loader.images[img_id]
-            vg_obj_ids = []
-            vg_boxes = []
+                img_obj_ids = vg_img['obj_ids']
+                img_vg_boxes = [self.vg_loader.objects[obj_id]['box'] for obj_id in set(img_obj_ids)]
 
-            img_obj_ids = vg_img['obj_ids']
-            img_vg_boxes = [self.vg_loader.objects[obj_id]['box'] for obj_id in set(img_obj_ids)]
+                for task in self.ImgReferTasks[img_id]:
+                    task_obj_ids = [i for i in task['ann_ids'] if i in img_obj_ids]
+                    vg_obj_ids.append(task_obj_ids)
+                    vg_boxes.append([self.vg_loader.objects[obj_id]['box'] for obj_id in set(task_obj_ids)])
 
-            for task in self.ImgReferTasks[img_id]:
-                task_obj_ids = [i for i in task['ann_ids'] if i in img_obj_ids]
-                vg_obj_ids.append(task_obj_ids)
-                vg_boxes.append([self.vg_loader.objects[obj_id]['box'] for obj_id in set(task_obj_ids)])
-
-            data['img_vg_boxes'] = img_vg_boxes
-            data['vg_boxes'] = vg_boxes
-            data['vg_obj_ids'] = vg_obj_ids
+                data['img_vg_boxes'] = img_vg_boxes
+                data['vg_boxes'] = vg_boxes
+                data['vg_obj_ids'] = vg_obj_ids
 
         data['bounds'] = {'it_pos_now': self.iterator, 'it_max': max_index, 'wrapped': wrapped}
 

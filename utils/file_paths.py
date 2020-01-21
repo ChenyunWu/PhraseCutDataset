@@ -21,9 +21,11 @@ img_info_fpath = dataset_dir.joinpath('image_data_split.json')
 skip_fpath = dataset_dir.joinpath('skip.json')
 
 refer_fpaths = dict()
+refer_input_fpaths = dict()
 vg_scene_graph_fpaths = dict()
 for split in ['train', 'val', 'test', 'miniv']:
     refer_fpaths[split] = dataset_dir.joinpath('refer_%s.json' % split)
+    refer_input_fpaths[split] = dataset_dir.joinpath('refer_input_%s.json' % split)
     vg_scene_graph_fpaths[split] = dataset_dir.joinpath('scene_graphs_%s.json' % split)
 
 # output paths

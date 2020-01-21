@@ -1,0 +1,77 @@
+#sending{
+    width:500px;
+    height:200px;
+    background:white;
+    position:absolute;
+    left:50%;
+    top:50%;
+    margin: -250px auto 0 -250px;
+    display: none;
+    border: 1px solid;
+    z-index: 100;
+}
+#sketchpadapp {
+    /* Prevent nearby text being highlighted when accidentally dragging mouse outside confines of the canvas */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+#sketchpad {
+    height:800px;
+    width:600px;
+    border-radius:4px;
+    position:relative; /* Necessary for correct mouse co-ords in Firefox */
+}
+#command, label {
+    font-size: 18px;
+}
+#toolbox{
+    position: absolute;
+    top: 200px;
+    left: 620px;
+    width:380px;
+}
+button {
+    font-size: 16px;
+    -webkit-appearance: none;
+    background: #eee;
+    border: 1px solid #888;
+}
+span{
+    color: red;
+    
+}
+#submit{
+    margin-top: 20px;
+    color: white;
+    background-color: red;
+}
+
+#ori-image-under{
+    position: absolute;
+    left: 1000px;
+    top: 200px;
+    z-index: -1;
+}
+#result-image{
+    position: absolute;
+    left: 1000px;
+    top: 200px;
+    background-color: white;
+    z-index: 10;
+}
+.topside{
+    height: 192px;
+}
+#skip-reason{
+    background-color: red;
+    width: 320px;
+    padding: 10px;
+}
+#skip-reason > button{
+    width: 300px;
+    margin: 10px;
+}

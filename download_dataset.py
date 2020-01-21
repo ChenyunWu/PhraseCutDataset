@@ -16,10 +16,14 @@ def download_annotations(splits, download_refer=True, download_sg=False, downloa
     urls = {
         'name_att_rel_count': 'https://drive.google.com/uc?id=1QbunEpB0l6PXCTVR5L7YsJM7-eNoKjHM',
         'img_info': 'https://drive.google.com/uc?id=1UmjLJx9BGE9ruOXK1T4iGCYKurY0jNOL',
-        'refer_miniv': 'https://drive.google.com/uc?id=1YkLB6JkwDVoIeRMWde1seTh78jUatWn3',
-        'refer_test': 'https://drive.google.com/uc?id=10DwzLreGip_YijCaxNK-VTQRga7iUUea',
-        'refer_train': 'https://drive.google.com/uc?id=1vMcJhLNOISztGjv9QhFhxZOU96VInddK',
-        'refer_val': 'https://drive.google.com/uc?id=10NJfznceaKeStL03nu0uGDP_jmbsxoRt',
+        'refer_miniv': 'https://drive.google.com/uc?id=1HL9YX8rmMTAxAblkBAVv2PO4aNHfFVDe',
+        'refer_test': 'https://drive.google.com/uc?id=1AZnk0neaLCTzXKmcOdBideO-9710evB-',
+        'refer_train': 'https://drive.google.com/uc?id=1ILvBDp31J9mIinlbfYJccw3tcpr6rI2b',
+        'refer_val': 'https://drive.google.com/uc?id=1Q2HFlss5Y2zLjTydQMWzq6u0iFsGPNnd',
+        'refer_input_miniv': 'https://drive.google.com/uc?id=1aFjegXv6VFgbDdcKwB7S4whSoagfN3pr',
+        'refer_input_test': 'https://drive.google.com/uc?id=1OwV4562W8K4zgHAY0g10gqtKwwd20ITs',
+        'refer_input_train': 'https://drive.google.com/uc?id=1efVlIcNnCtlisC80mj_4f_BeO4p5zt2B',
+        'refer_input_val': 'https://drive.google.com/uc?id=1-t1Qha7Bu9DKwFxUL9Tt6A6nw6ANtImI',
         'scene_graphs_train': 'https://drive.google.com/uc?id=1NYrM09r1PWtV3kPvUrfO18eOzGT5RL3O',
         'scene_graphs_val': 'https://drive.google.com/uc?id=1qCxqXguncmnfPHpKmeHmT_5a3xoIogVj',
         'scene_graphs_test': 'https://drive.google.com/uc?id=1oSQTCPg8-nT9nA8_rCPIcAPa22O0cL0p',
@@ -39,6 +43,7 @@ def download_annotations(splits, download_refer=True, download_sg=False, downloa
     for s in splits:
         if download_refer:
             gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False, proxy=None)
+            gdown.download(urls['refer__input_%s' % s], str(refer_input_fpaths[s]), quiet=False, proxy=None)
         if download_sg:
             gdown.download(urls['scene_graphs_%s' % s], str(vg_scene_graph_fpaths[s]), quiet=False, proxy=None)
     return

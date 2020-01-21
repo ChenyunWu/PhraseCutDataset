@@ -204,7 +204,7 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
 
 
 def pred_visualize_to_file(img_data, fig_path, pred_boxlist=None, pred_boxes=None, pred_mask=None, can_boxes=None,
-                           skip_exist=True, xywh=True):
+                           skip_exist=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300.0
     fig_w = img_data['width'] / 300.0
@@ -252,3 +252,17 @@ def score_visualize_to_file(img_data, fig_path, score_mask, skip_exist=True, inc
         print('img_size:', img_data['height'], img_data['width'])
         print('fig_size:', fig_h, fig_w)
     return True
+
+
+def save_pred_to_png(pred_mask, fig_path):
+    # print('np hw', pred_mask.shape)
+
+    # img = Image.fromarray(pred_mask.astype(int), 'L').convert('1')
+    h, w = pred_mask.shape
+    img = Image.new('1', (w, h))
+    pixels = img.load()
+    for i in range(w):
+        for j in range(h):
+            pixels[i, j] = int(pred_mask[j, i])
+    # print('pil wh', img.size)
+    img.save(fig_path)
