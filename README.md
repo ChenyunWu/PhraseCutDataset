@@ -3,7 +3,7 @@
 <table width="100%">
   <tr>Examples from the dataset:</tr>
   <tr>
-  <td><img src="visualizations/gt.jpg", alt="examples" width="800"></td>
+  <td><img src="figures/gt.jpg", alt="examples" width="800"></td>
   </tr>
 </table>
 
@@ -15,9 +15,9 @@
     <td> Relationship predicates</td>
   </tr>
   <tr>
-    <td><img src="visualizations/names200.png", alt="names" width="250"></td>
-    <td><img src="visualizations/atts.png", alt="atts" width="250"></td>
-    <td><img src="visualizations/rels.png", alt="rels" width="250"></td>
+    <td><img src="figures/names200.png", alt="names" width="250"></td>
+    <td><img src="figures/atts.png", alt="atts" width="250"></td>
+    <td><img src="figures/rels.png", alt="rels" width="250"></td>
   </tr>
 </table>
 
@@ -64,7 +64,7 @@ python visualize.py -p output/baselines/box_rand/miniv/predictions/
 
 Prediction results will be saved as PNG images in **output/baselines/box_rand/miniv/predictions/**
 
-Visualizations are organized in **output/baselines/ins_rand/miniv/htmls/all.html**
+Visualizations are organized in **output/baselines/box_rand/miniv/htmls/all.html**
 
 You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more data examples.
 
@@ -151,7 +151,7 @@ Given predicted regions of each referring phrase , we report:
 
 The statistics can be reported on each subset separately. See [utils/subset.py](utils/subset.py) for supported subsets.
 
-- **Step1: Save predictions to black-and-white PNG images in a folder.** 
+- **Step 1: Save predictions to black-and-white PNG images in a folder.** 
 
   We call each phrase-region pair as a "task", and provide a unique "task_id" for each task. The file name of each image should be "**task_id**.png". The image size should be identical with the input image. Set pixels to "1" (or "white") for your predicted region, and the rest area "0" (or "black").
   We provide a naive example called [box_rand_predictor](utils/predictor_examples.py).

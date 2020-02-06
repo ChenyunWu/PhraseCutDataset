@@ -20,6 +20,7 @@ class RefVGLoader(object):
 
         self.vg_loader = None
         if include_vg_scene_graph:
+            assert not input_anno_only
             self.vg_loader = VGLoader(split=split, phrase_handler=phrase_handler, obj_filter=False)
 
         ref_tasks = []

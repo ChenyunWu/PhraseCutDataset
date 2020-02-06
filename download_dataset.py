@@ -43,7 +43,7 @@ def download_annotations(splits, download_refer=True, download_sg=False, downloa
     for s in splits:
         if download_refer:
             gdown.download(urls['refer_%s' % s], str(refer_fpaths[s]), quiet=False, proxy=None)
-            gdown.download(urls['refer__input_%s' % s], str(refer_input_fpaths[s]), quiet=False, proxy=None)
+            gdown.download(urls['refer_input_%s' % s], str(refer_input_fpaths[s]), quiet=False, proxy=None)
         if download_sg:
             gdown.download(urls['scene_graphs_%s' % s], str(vg_scene_graph_fpaths[s]), quiet=False, proxy=None)
     return

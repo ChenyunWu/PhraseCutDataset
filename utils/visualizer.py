@@ -34,10 +34,9 @@ html_fig_str_formatter = '''
 
 
 class Visualizer:
-    def __init__(self, refvg_loader=None, refvg_split=None, pred_plot_path=None,
-                 gt_plot_gray=True, pred_skip_exist=True, gt_skip_exist=True,
-                 baselines=None, baselines_skip_exist=True,
-                 all_task_num=400, subset_task_num=200, include_subsets=None):
+    def __init__(self, refvg_loader=None, refvg_split=None, png_path_dict=None, pred_plot_path=None, gt_plot_gray=True,
+                 pred_skip_exist=True, gt_skip_exist=True, baselines=None, baselines_skip_exist=True, all_task_num=400,
+                 subset_task_num=200, include_subsets=None):
 
         if refvg_loader is None:
             refvg_loader = RefVGLoader(split=refvg_split)
@@ -72,6 +71,7 @@ class Visualizer:
         for subset in self.include_subsets:
             self.tasks_in_subset[subset] = set()
 
+        self.png_path_dict = png_path_dict
         self.baselines = baselines
         self.baselines_skip_exist = baselines_skip_exist
         if baselines is not None:
@@ -103,8 +103,8 @@ class Visualizer:
                     return True
         return False
 
-    def plot_single_task(self, img_id, task_id, task_pred_dict, pred_bin_tags=None, pred_score_tags=None,
-                         pred_box_tags=None, verbose=False, range01=True):
+    def plot_single_task(self, img_id, task_id, task_pred_dict=None,
+                         pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None, verbose=False, range01=True):
         fig_name = '%s.jpg' % task_id
         img_data = self.refvg_loader.get_img_ref_data(img_id)
         task_subsets = self.refvg_loader.get_task_subset(img_id, task_id)
@@ -152,6 +152,14 @@ class Visualizer:
                             tag += '(old plot)'
                         task_cache_dict['figs'].append((tag, fig_path))
 
+        # predictions: use existing png pred paths
+        if self.png_path_dict is not None:
+            for tag, folder in self.png_path_dict.items():
+                png_file_path = os.path.join(folder, '%s.png' % task_id)
+                if os.path.exists(png_file_path):
+                    task_cache_dict['figs'].append((tag, png_file_path))
+
+        # predictions: make plots
         if pred_bin_tags is not None:
             for tag in pred_bin_tags:
                 pred_bin = task_pred_dict[tag]
@@ -174,6 +182,8 @@ class Visualizer:
         if pred_box_tags is not None:
             for tag in pred_box_tags:
                 pred_boxlist = task_pred_dict[tag]
+                pred_boxes = None
+                xywh = True
                 if type(pred_boxlist) == list:
                     pred_boxes = pred_boxlist
                     pred_boxlist = None
@@ -183,7 +193,7 @@ class Visualizer:
                     os.makedirs(out_path)
                 fig_path = os.path.join(out_path, fig_name)
                 is_new_plot = pred_visualize_to_file(img_data, fig_path=fig_path, pred_boxlist=pred_boxlist,
-                                                     pred_boxes=pred_boxes, skip_exist=self.pred_skip_exist)
+                                                     pred_boxes=pred_boxes, skip_exist=self.pred_skip_exist, xywh=xywh)
                 plot_info += 'box-%s:%s;' % (tag, is_new_plot)
                 if tag + '_info' in task_pred_dict:
                     tag += ': ' + task_pred_dict[tag + '_info']

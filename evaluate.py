@@ -4,8 +4,9 @@ import numpy as np
 from PIL import Image
 
 from utils.evaluator import Evaluator
-from utils.predictor_examples import vg_gt_predictor, vg_rand_predictor, ins_rand_predictor, box_rand_predictor
+from utils.predictor_examples import example_predictor
 from utils.file_paths import output_path
+from utils.visualize_utils import png_to_pred_mask
 
 
 def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp_name_in_summary=None,
@@ -21,12 +22,10 @@ def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp
             continue
         task_id = fname.split('.')[0]
         img_id = task_id.split('__')[0]
-        im_frame = Image.open(os.path.join(pred_folder, fname))
-        w, h = im_frame.size
-        np_frame = np.array(im_frame.getdata()).reshape((h, w))
+        pred_mask = png_to_pred_mask(os.path.join(pred_folder, fname))
 
         if img_id == cur_img_id:
-            img_preds[task_id] = {'pred_mask': np_frame}
+            img_preds[task_id] = {'pred_mask': pred_mask}
 
         else:
             if len(img_preds) > 0:
@@ -35,7 +34,10 @@ def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp
                                                   pred_mask_tag='pred_mask', verbose=verbose)
             cur_img_id = img_id
             img_preds = dict()
-            img_preds[task_id] = {'pred_mask': np_frame}
+            img_preds[task_id] = {'pred_mask': pred_mask}
+        if len(img_preds) > 0:
+            im, _ = evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds,
+                                              pred_mask_tag='pred_mask', verbose=verbose)
 
     evaluator.analyze_stats(mask_box=['mask'], exp_name_in_summary=exp_name_in_summary,
                             save_result_to_path=save_result_to_path)
@@ -84,15 +86,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--pred_name', type=str, default='box_rand',
                         help='name of the predictor: box_rand, vg_gt, vg_rand, ins_rand, or your own name.')
-    parser.add_argument('-p', '--pred_path', type=str, default=None,
-                        help='path to the folder containing prediction results. If empty, check pred_dict.')
-    parser.add_argument('-d', '--pred_dict', type=str, default=None,
-                        help='path to the .npy file of prediction results. If empty, run the predictor.')
     parser.add_argument('-s', '--split', type=str, default='miniv',
                         help='dataset split to evaluate: val, miniv, test, train, val_miniv, etc')
     parser.add_argument('-a', '--analyze_subset', type=int, default=1, help='whether to enable subset analysis')
-    parser.add_argument('-f', '--save_pred', type=int, default=1, help='whether to save pred numpy to file.')
     parser.add_argument('-l', '--log_to_summary', type=int, default=1, help='whether to log results to the summary.')
+    parser.add_argument('-p', '--pred_path', type=str, default=None,
+                        help='path to the folder containing ".png" prediction results. If empty, check pred_dict.')
+    parser.add_argument('-d', '--pred_dict', type=str, default=None,
+                        help='Obsolete. path to the .npy file of prediction results. If empty, run the predictor.')
+    parser.add_argument('-f', '--save_pred', type=int, default=0,
+                        help='Obsolete. Only when using pred_dict. Whether to save pred numpy to file.')
     args = parser.parse_args()
 
     # out_path
@@ -111,35 +114,24 @@ def main():
     else:
         exp_name = args.pred_name
 
-    # evaluate
-    if args.pred_path is None and args.pred_name.startswith('box_rand'):
-        pred_folder = os.path.join(out_path, 'predictions')
-        box_rand_predictor(split=args.split, out_path=pred_folder)
-        evaluate_from_pred_folder(pred_folder=pred_folder, refvg_split=args.split,
-                                  analyze_subset=args.analyze_subset, exp_name_in_summary=exp_name,
-                                  save_result_to_path=out_path, verbose=True)
-    elif args.pred_path is not None and os.path.exists(args.pred_path):
-        evaluate_from_pred_folder(pred_folder=args.pred_folder, refvg_split=args.split,
-                                  analyze_subset=args.analyze_subset, exp_name_in_summary=exp_name,
-                                  save_result_to_path=out_path, verbose=True)
-    else:  # cases to evaluate from pred_dict
-        if args.pred_dict is not None and os.path.exists(args.pred_dict):
-            predictions = np.load(args.pred_path).item()
-        else:
-            if args.pred_name.startswith('vg_gt'):
-                predictions = vg_gt_predictor(split=args.split)
-            elif args.pred_name.startswith('vg_rand'):
-                predictions = vg_rand_predictor(split=args.split)
-            elif args.pred_name.startswith('ins_rand'):
-                predictions = ins_rand_predictor(split=args.split)
-            else:
-                raise NotImplementedError
+    # predict
+    if args.pred_path is None and args.pred_dict is None:
+        args.pred_path = os.path.join(out_path, 'predictions')
+        example_predictor(split=args.split, out_png_path=args.pred_path, pred_method_name=args.pred_name)
 
+    # evaluate
+    if args.pred_path is not None:
+        evaluate_from_pred_folder(pred_folder=args.pred_path, refvg_split=args.split,
+                                  analyze_subset=args.analyze_subset, exp_name_in_summary=exp_name,
+                                  save_result_to_path=out_path, verbose=True)
+
+    else:  # to evaluate from pred_dict, obsolete
+        assert os.path.exists(args.pred_dict)
+        predictions = np.load(args.pred_dict).item()
         predictions = evaluate_from_pred_dict(predictions=predictions, refvg_split=args.split,
                                               analyze_subset=args.analyze_subset, exp_name_in_summary=exp_name,
                                               save_result_to_path=out_path, update_predictions=args.save_pred,
                                               verbose=True)
-
         if args.save_pred:
             print('saving %s to %s' % (args.pred_name, out_path))
             pred_path = os.path.join(out_path, 'pred_eval.npy')

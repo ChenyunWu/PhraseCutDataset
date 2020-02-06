@@ -101,10 +101,15 @@ class Evaluator:
                     self.subset_stats[k][4].append(float(u_mask))
 
         if verbose:
-            bi = np.mean(self.subset_stats['all'][1])
-            mi = np.mean(self.subset_stats['all'][2])
-            print('img|task[%d|%d] %s: %d phrases. Up till now: mean_iou_box %.3f, mean_iou_mask %.3f' %
-                  (len(self.evaluated_img_ids), self.evaluated_task_count, img_id, len(img_data['task_ids']), bi, mi))
+            to_print = 'img|task[%d|%d]: %d phrases. Up till now: %d tasks; ' % \
+                       (len(self.evaluated_img_ids), img_id, self.evaluated_task_count, len(img_data['task_ids']))
+            if pred_boxes_tag is not None:
+                bi = np.mean(self.subset_stats['all'][1])
+                to_print += 'mean_box_iou %.3f; ' % bi
+            if pred_mask_tag is not None:
+                mi = np.mean(self.subset_stats['all'][2])
+                to_print += 'mean_mask_iou %.3f; ' % mi
+            print(to_print)
 
         return img_mask_ious, img_box_ious
 

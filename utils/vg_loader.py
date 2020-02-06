@@ -2,12 +2,12 @@
 scene_graphs.json:
 list of scene graphs (one for each image, dict[u'relationships', u'image_id', u'objects'])
 image_id: not continuous or increasing! min=1, max=2417997. 108077 images in total
-objects: a list of dicts: object_id, x,y,w,h, attributes(list of str), names(list of str), synsets. (0 ~ 207 objects)
+objects: a list of dicts: object_id, xywh, attributes(list of str), names(list of str), synsets. (0 ~ 207 objects)
 relationships: a list of dicts: subject_id, object_id, relationship_id, predicate, synsets (0 ~ 800 relationships)
 
 img_data.json:
 list of img info (dict: image_id, coco_id, flickr_id, width, height, url)
-img_data_split3000.json:
+img_data_split.json:
 add split: 'train'/'val'/'test' to img info
 
 """
