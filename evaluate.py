@@ -99,14 +99,12 @@ def main():
     args = parser.parse_args()
 
     # out_path
-    out_path = None
-    if args.save_pred:
-        if args.pred_path is not None:
-            out_path = os.path.dirname(args.pred_path)
-        elif args.pred_dict is not None:
-            out_path = os.path.dirname(args.pred_dict)
-        else:
-            out_path = os.path.join(output_path, 'baselines', args.pred_name, args.split)
+    if args.pred_path is not None:
+        out_path = os.path.normpath(os.path.join(args.pred_path, os.pardir))
+    elif args.pred_dict is not None:
+        out_path = os.path.dirname(args.pred_dict)
+    else:
+        out_path = os.path.join(output_path, 'baselines', args.pred_name, args.split)
 
     # exp_name for summary
     if not args.log_to_summary:
