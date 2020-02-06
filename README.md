@@ -1,4 +1,4 @@
-# VGPhraseCut Dataset
+# VGPhraseCut Dataset API
 
 <table width="100%">
   <tr>Examples from the dataset:</tr>
@@ -38,7 +38,7 @@ More dataset statistics and data collection pipeline details can be found in the
 
 ## Quick Start
 
- TLDR version to try out the miniv split of our dataset.
+ TL;DR version to try out the miniv split of our dataset.
 
 ```bash
 # [optional]: create conda environment
@@ -76,21 +76,21 @@ Paper on Arxiv #TODO
 
 ## Requirements
 
-- python 3
-- numpy
-- matplotlib
-- pillow
-- requests
-- gdown
+- python 3.7
+- numpy 1.17.4
+- matplotlib 3.1.1
+- pillow 6.1.0
+- requests 2.22.0
+- gdown 3.9.0
 
 We recommend creating a new conda environment for this project. Conda can be installed through [this link](https://docs.conda.io/en/latest/miniconda.html).
 
 ```bash
-conda create -n phrasecut_env
+conda create -n phrasecut_env python=3.7
 conda activate phrasecut_env
 ```
 
-You can install  the remaining requirements with 'conda' or  'pip':
+You can install  the remaining requirements with 'pip' (or 'conda'):
 
 ```bash
 pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
@@ -154,21 +154,21 @@ The statistics can be reported on each subset separately. See [utils/subset.py](
 - **Step 1: Save predictions to black-and-white PNG images in a folder.** 
 
   We call each phrase-region pair as a "task", and provide a unique "task_id" for each task. The file name of each image should be "**task_id**.png". The image size should be identical with the input image. Set pixels to "1" (or "white") for your predicted region, and the rest area "0" (or "black").
-  We provide a naive example called [box_rand_predictor](utils/predictor_examples.py).
+  We provide naive example predictors  in [utils/predictor_examples.py](utils/predictor_examples.py).
 
 - **Step 2: Evaluate.** 
 ```bash
 python evaluate.py --split=val --pred_path=path/to/your/prediction/folder --pred_name=your_method_name 
 ```
-Make sure to set "split" to the actual split you are predicting. The optional "pred_name" is only used to log results to summary files for the convenience of comparing different methods.
+Make sure to set "split" to the actual split you are predicting. The optional "pred_name" is only used to log results to summary files for the convenience of comparing different methods (in 'output/eval_refvg' by default).
 
 The evalation results will be printed in the console, and saved to a "results.txt" file in the parent directory of your "pred_path".
 
 **Additional option:**
 
-Saving all perdition results can consume a lot of time and space. If you are using Python for your predictor, you can use our ['Evaluator'](utils/evaluator.py) class. It updates the evaluation after predicting on each image, so that predictions on previous images do not need to be saved.
+Saving all perdition results can consume a lot of time and space. If your predictor is implemented in Python, you can use our ['Evaluator'](utils/evaluator.py) class. It updates the evaluation after predicting on each image, so that predictions on previous images do not need to be saved.
 
-First initialize an evaluator, then enumerate over images and call `evaluator.eval_single_img(...)` after predicting on all referring phrases of each image, finally call `evaluator.analyze_stats(...)` to get the final evaluation results.
+First initialize an evaluator, then enumerate over images and call `evaluator.eval_single_img(...)` after predicting on all referring phrases of each image, finally call `evaluator.analyze_stats(...)` to get the evaluation results.
 See the 'evaluate_from_pred_folder' function in [evaluate.py](evaluate.py) as an example.
 
 
@@ -182,9 +182,8 @@ The visualizations will be created in the parent directory.
 Similar as the 'Evaluator', we also provide a ['Visualizer'](utils/visualizer.py) to generate visualizations after predicting on each task, avoiding saving all the prediction results. 
 
 ## Additional utilities
-- [**Simple predictors**](utils/predictor_examples.py): example naive predictors.
-- **Loaders**: 
-[RefVGLoader](utils/refvg_loader.py) loads the dataset from files. It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases, and (optionally) [VGLoader](utils/vg_loader.py) to load Visual Genome scene graphs.
+- [**predictor examples**](utils/predictor_examples.py): example naive predictors.
+- **[RefVGLoader](utils/refvg_loader.py)**: loads the dataset from files. It uses [PhraseHandler](utils/phrase_handler.py) to handle the phrases, and (optionally) [VGLoader](utils/vg_loader.py) to load Visual Genome scene graphs.
 - [**ThreshBinSearcher**](utils/find_thresh.py): efficiently searches the thresholds on final prediction scores given the overall percentage of pixels predicted as the referred region. 
 - [**Data transfer**](utils/data_transfer.py): changes representations of boxes, polygons, masks, etc.
 - [**IoU**](utils/iou.py): calculates IoU between boxes, polygons, masks, etc.
@@ -211,7 +210,7 @@ All VGPhraseCut annotation files are shared through this [Google Drive link](htt
 
 They are separate files for the different splits. 
 `refer_xxx.json` files contain all available annotations, while `refer_input_xxx.json` files only keep information valid to use as the input to the task, with ground-truth and additional labels removed. 
-Each file contains a list of tasks. Each task stands for a phrase-region pair, organized as a 'dict' with following keys: 
+Each file contains a list of tasks. Each task stands for a phrase-region pair, organized as a 'dict' with the following keys: 
 
 - **task_id**: unique id for each phrase-region pair (constructed from image_id and ann_ids)
 - **image_id**: image id from Visual Genome

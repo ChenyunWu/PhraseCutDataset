@@ -1,7 +1,6 @@
 import argparse
 import os
 import numpy as np
-from PIL import Image
 
 from utils.evaluator import Evaluator
 from utils.predictor_examples import example_predictor
@@ -35,9 +34,10 @@ def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp
             cur_img_id = img_id
             img_preds = dict()
             img_preds[task_id] = {'pred_mask': pred_mask}
-        if len(img_preds) > 0:
-            im, _ = evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds,
-                                              pred_mask_tag='pred_mask', verbose=verbose)
+
+    if len(img_preds) > 0:
+        im, _ = evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds,
+                                          pred_mask_tag='pred_mask', verbose=verbose)
 
     evaluator.analyze_stats(mask_box=['mask'], exp_name_in_summary=exp_name_in_summary,
                             save_result_to_path=save_result_to_path)

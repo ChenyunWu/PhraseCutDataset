@@ -64,8 +64,14 @@ def example_predictor(refvg_loader=None, split='val', eval_img_count=-1, pred_me
     Note that 'vg_gt', 'vg_rand' and 'ins_rand' are not rigid predictors to compare on the dataset,
     because they require extra annotations not included as the valid input.
     Save predictions as binary PNG images into the out_png_path.
-    [Obsolete:] Save all predictions in a dict as a npy file to out_dict_path.
+    [Obsolete:] Save all predictions in a dict as a npy file to out_dict_path. Only when out_png_path is None.
     """
+    # Obsolete
+    if out_dict_path is not None and out_png_path is None:
+        return example_predictor_obsolete(refvg_loader=refvg_loader, split=split,
+                                          eval_img_count=eval_img_count, pred_method_name=pred_method_name,
+                                          out_dict_path=out_dict_path)
+
     print('start of example predictor:', pred_method_name)
     loader = refvg_loader
     if loader is None:
@@ -83,18 +89,10 @@ def example_predictor(refvg_loader=None, split='val', eval_img_count=-1, pred_me
     # prepare path
     if out_png_path is not None and not os.path.exists(out_png_path):
         os.makedirs(out_png_path)
-    # obsolete
-    predictions = None
-    if out_dict_path is not None:
-        predictions = dict()
 
     for img_i, img_id in enumerate(loader.img_ids):
         print('predicting on: img %d / %d' % (img_i, eval_img_count))
         img_data = loader.get_img_ref_data(img_id)
-        # obsolete
-        if out_dict_path is not None:
-            predictions[img_id] = dict()
-
         for task_i, task_id in enumerate(img_data['task_ids']):
             # make prediction
             pred_mask, pred_boxlist, correct = pred_func(img_data, task_i)
@@ -102,7 +100,45 @@ def example_predictor(refvg_loader=None, split='val', eval_img_count=-1, pred_me
             if out_png_path is not None:
                 file_path = os.path.join(out_png_path, '%s.png' % task_id)
                 save_pred_to_png(pred_mask, file_path)
-            # obsolete
+
+        if img_i >= eval_img_count > 0:
+            break
+
+    print('example predictor %s Done!' % pred_method_name)
+    return None
+
+
+def example_predictor_obsolete(refvg_loader=None, split='val', eval_img_count=-1, pred_method_name='box_rand',
+                               out_dict_path=None):
+    """
+    Save all predictions in a dict as a npy file to out_dict_path.
+    """
+    loader = refvg_loader
+    if loader is None:
+        if pred_method_name == 'box_rand':
+            # this is how you should create the loader for prediction
+            loader = RefVGLoader(split=split, input_anno_only=True)
+        elif pred_method_name == 'ins_rand':
+            loader = RefVGLoader(split=split, input_anno_only=False)
+        elif pred_method_name in ['vg_gt', 'vg_rand']:
+            loader = RefVGLoader(split=split, include_vg_scene_graph=True)
+    if eval_img_count < 0:
+        eval_img_count = len(loader.img_ids)
+
+    pred_func = pred_func_fetcher[pred_method_name]
+
+    predictions = dict()
+
+    for img_i, img_id in enumerate(loader.img_ids):
+        print('predicting on: img %d / %d' % (img_i, eval_img_count))
+        img_data = loader.get_img_ref_data(img_id)
+
+        predictions[img_id] = dict()
+
+        for task_i, task_id in enumerate(img_data['task_ids']):
+            # make prediction
+            pred_mask, pred_boxlist, correct = pred_func(img_data, task_i)
+            # save results
             if out_dict_path is not None:
                 pred_mask = np.packbits(pred_mask.astype(np.bool))
                 predictions[img_id][task_id] = {'pred_boxlist': pred_boxlist, 'pred_mask': pred_mask}
@@ -110,202 +146,15 @@ def example_predictor(refvg_loader=None, split='val', eval_img_count=-1, pred_me
         if img_i >= eval_img_count > 0:
             break
 
-    # obsolete
-    if out_dict_path is not None:
-        print('example predictor %s: saving predictions to %s' % (pred_method_name, out_dict_path))
-        if not os.path.exists(out_dict_path):
-            os.makedirs(out_dict_path)
-        fname = split
-        if eval_img_count > 0:
-            fname += '_%d' % eval_img_count
-        fname += '.npy'
-        f_path = os.path.join(out_dict_path, fname)
-        np.save(f_path, predictions)
+    print('example predictor %s: saving predictions to %s' % (pred_method_name, out_dict_path))
+    if not os.path.exists(out_dict_path):
+        os.makedirs(out_dict_path)
+    fname = split
+    if eval_img_count > 0:
+        fname += '_%d' % eval_img_count
+    fname += '.npy'
+    f_path = os.path.join(out_dict_path, fname)
+    np.save(f_path, predictions)
 
     print('example predictor %s Done!' % pred_method_name)
     return predictions
-
-
-# def box_rand_predictor(split='val', eval_img_count=-1, out_png_path='output/baselines/box_rand/predictions',
-#                        out_dict_path=None):
-#     """
-#     randomly generate a box on the image as the predicted mask.
-#     Save predictions as binary PNG images into the out_png_path.
-#     [Obsolete:] Save all predictions in a dict as a npy file to out_dict_path.
-#     """
-#     print('start of box_rand_predictor')
-#     loader = RefVGLoader(split=split, input_anno_only=True)
-#     if eval_img_count < 0:
-#         eval_img_count = len(loader.img_ids)
-#
-#     # prepare path
-#     if out_png_path is not None and not os.path.exists(out_png_path):
-#         os.makedirs(out_png_path)
-#     # obsolete
-#     predictions = None
-#     if out_dict_path is not None:
-#         predictions = dict()
-#
-#     for img_i, img_id in enumerate(loader.img_ids):
-#         print('box_rand_predictor: img %d / %d' % (img_i, eval_img_count))
-#         img_data = loader.get_img_ref_data(img_id)
-#         if out_dict_path is not None:
-#             predictions[img_id] = dict()
-#         for task_i, task_id in enumerate(img_data['task_ids']):
-#             w = img_data['width']
-#             h = img_data['height']
-#             x1 = random.randint(0, h - 1)
-#             x2 = random.randint(0, h - 1)
-#             if x1 > x2:
-#                 t = x1
-#                 x1 = x2
-#                 x2 = t
-#             y1 = random.randint(0, w - 1)
-#             y2 = random.randint(0, w - 1)
-#             if y1 > y2:
-#                 t = y1
-#                 y1 = y2
-#                 y2 = t
-#             pred_mask = boxes_to_mask([[x1, y1, x2, y2]], w, h, xywh=False)
-#
-#             # save results
-#             if out_png_path is not None:
-#                 fpath = os.path.join(out_png_path, '%s.png' % task_id)
-#                 save_pred_to_png(pred_mask, fpath)
-#             # obsolete
-#             if out_dict_path is not None:
-#                 pred_mask = np.packbits(pred_mask.astype(np.bool))
-#                 predictions[img_id][task_id] = {'pred_boxlist': [[x1, y1, x2-x1, y2-y1]], 'pred_mask': pred_mask}
-#
-#         if img_i >= eval_img_count > 0:
-#             break
-#     # obsolete
-#     if out_dict_path is not None:
-#         print('box_rand_predictor: saving predictions to %s' % out_dict_path)
-#         if not os.path.exists(out_dict_path):
-#             os.makedirs(out_dict_path)
-#         fname = split
-#         if eval_img_count > 0:
-#             fname += '_%d' % eval_img_count
-#         fname += '.npy'
-#         f_path = os.path.join(out_dict_path, fname)
-#         np.save(f_path, predictions)
-#
-#     print('box_rand_predictor Done!')
-#     return
-
-#
-# def vg_gt_predictor(split='val', eval_img_count=-1, out_dir_path=None):
-#     """
-#     vg boxes used to generate the phrase as the predicted mask.
-#     Save prediction results to a dict.
-#     Note that it's not a rigid predictor to compare on the dataset, because it requires vg_gt boxes,
-#     which is not included in the input annotations.
-#     """
-#     loader = RefVGLoader(split=split, include_vg_scene_graph=True, input_anno_only=False)
-#     if eval_img_count < 0:
-#         eval_img_count = len(loader.img_ids)
-#     predictions = dict()
-#     for img_i, img_id in enumerate(loader.img_ids):
-#         print('vg_predictor: img %d / %d' % (img_i, eval_img_count))
-#         img_data = loader.get_img_ref_data(img_id)
-#         predictions[img_id] = dict()
-#         for task_i, task_id in enumerate(img_data['task_ids']):
-#             pred_box_list = img_data['vg_boxes'][task_i]
-#             pred_mask = boxes_to_mask(pred_box_list, img_data['width'], img_data['height'], xywh=True)
-#             pred_mask = np.packbits(pred_mask.astype(np.bool))
-#             predictions[img_id][task_id] = {'pred_boxlist': pred_box_list, 'pred_mask': pred_mask}
-#         if len(predictions) >= eval_img_count > 0:
-#             break
-#
-#     if out_dir_path is not None:
-#         print('vg_gt_predictor: saving predictions to %s' % out_dir_path)
-#         if not os.path.exists(out_dir_path):
-#             os.makedirs(out_dir_path)
-#         fname = split
-#         if eval_img_count > 0:
-#             fname += '_%d' % eval_img_count
-#         fname += '.npy'
-#         f_path = os.path.join(out_dir_path, fname)
-#         np.save(f_path, predictions)
-#     print('vg_gt_predictor Done!')
-#     return predictions
-
-
-# def vg_rand_predictor(split='val', eval_img_count=-1, out_path=None):
-#     """
-#     randomly pick one vg box as the predicted mask.
-#     Save prediction results to a dict.
-#     Note that it's not a valid predictor to compare on the dataset, because it requires vg boxes,
-#     which is not included in the input annotations.
-#     """
-#     loader = RefVGLoader(split=split, include_vg_scene_graph=True)
-#     if eval_img_count < 0:
-#         eval_img_count = len(loader.img_ids)
-#     predictions = dict()
-#     for img_i, img_id in enumerate(loader.img_ids):
-#         print('rand_vg_predictor: img %d / %d' % (img_i, eval_img_count))
-#         img_data = loader.get_img_ref_data(img_id)
-#         predictions[img_id] = dict()
-#         for task_i, task_id in enumerate(img_data['task_ids']):
-#             pred_boxes = [random.choice(img_data['img_vg_boxes'])]
-#             pred_mask = boxes_to_mask(pred_boxes, img_data['width'], img_data['height'], xywh=True)
-#             pred_mask = np.packbits(pred_mask.astype(np.bool))
-#             predictions[img_id][task_id] = {'pred_boxlist': pred_boxes, 'pred_mask': pred_mask}
-#         if len(predictions) >= eval_img_count > 0:
-#             break
-#
-#     if out_path is not None:
-#         print('rang_vg_predictor: saving predictions to %s' % out_path)
-#         if not os.path.exists(out_path):
-#             os.makedirs(out_path)
-#         fname = split
-#         if eval_img_count > 0:
-#             fname += '_%d' % eval_img_count
-#         fname += '.npy'
-#         f_path = os.path.join(out_path, fname)
-#         np.save(f_path, predictions)
-#     print('rand_vg_predictor Done!')
-#     return predictions
-
-#
-# def ins_rand_predictor(split='val', eval_img_count=-1, out_path=None):
-#     """
-#     randomly pick one instance mask as the predicted mask.
-#     Save prediction results to a dict.
-#     Note that it's not a valid predictor to compare on the dataset, because it requires instances,
-#     which is not included in the input annotations.
-#     """
-#     loader = RefVGLoader(split=split)
-#     if eval_img_count < 0:
-#         eval_img_count = len(loader.img_ids)
-#     predictions = dict()
-#     for img_i, img_id in enumerate(loader.img_ids):
-#         print('ins_rand_predictor: img %d / %d' % (img_i, eval_img_count))
-#         img_data = loader.get_img_ref_data(img_id)
-#         predictions[img_id] = dict()
-#         for task_i, task_id in enumerate(img_data['task_ids']):
-#             pred_ix = random.choice(range(len(img_data['img_ins_boxes'])))
-#             pred_box = img_data['img_ins_boxes'][pred_ix]
-#             pred_polygons = img_data['img_ins_Polygons'][pred_ix]
-#             pred_mask = polygons_to_mask(pred_polygons, img_data['width'], img_data['height'])
-#             correct = 0
-#             if pred_box in img_data['gt_boxes']:
-#                 correct = 1
-#             pred_mask = np.packbits(pred_mask.astype(np.bool))
-#             predictions[img_id][task_id] = {'pred_boxlist': [pred_box], 'pred_mask': pred_mask, 'correct': correct}
-#         if len(predictions) >= eval_img_count > 0:
-#             break
-#
-#     if out_path is not None:
-#         print('ins_rand_predictor: saving predictions to: %s' % out_path)
-#         if not os.path.exists(out_path):
-#             os.makedirs(out_path)
-#         fname = split
-#         if eval_img_count > 0:
-#             fname += '_%d' % eval_img_count
-#         fname += '.npy'
-#         f_path = os.path.join(out_path, fname)
-#         np.save(f_path, predictions)
-#     print('ins_rand_predictor Done!')
-#     return predictions

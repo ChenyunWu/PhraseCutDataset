@@ -101,8 +101,8 @@ class Evaluator:
                     self.subset_stats[k][4].append(float(u_mask))
 
         if verbose:
-            to_print = 'img|task[%d|%d]: %d phrases. Up till now: %d tasks; ' % \
-                       (len(self.evaluated_img_ids), img_id, self.evaluated_task_count, len(img_data['task_ids']))
+            to_print = 'img|task [%d|%d] %d phrases. ' % \
+                       (len(self.evaluated_img_ids), self.evaluated_task_count, len(img_data['task_ids']))
             if pred_boxes_tag is not None:
                 bi = np.mean(self.subset_stats['all'][1])
                 to_print += 'mean_box_iou %.3f; ' % bi

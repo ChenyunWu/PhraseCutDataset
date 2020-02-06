@@ -12,16 +12,21 @@ def visualize_from_png_path(refvg_split, png_path, out_path=None, all_task_num=-
                             pred_plot=True, gt_skip_exist=True, verbose=True):
     if out_path is None:
         out_path = os.path.normpath(os.path.join(png_path, os.pardir))
-    plot_path = None
+
     if pred_plot:
         plot_path = os.path.join(out_path, 'pred_plots')
+        png_path_dict = None
+    else:
+        plot_path = None
+        png_path_dict = {'prediction': png_path}
+
     fnames = os.listdir(png_path)
     if all_task_num < 0:
         all_task_num = len(fnames)
 
-    visualizer = Visualizer(refvg_split=refvg_split, png_path_dict={'prediction': png_path},
-                            pred_plot_path=plot_path, pred_skip_exist=True,
-                            gt_skip_exist=gt_skip_exist, all_task_num=all_task_num, subset_task_num=subset_task_num)
+    visualizer = Visualizer(refvg_split=refvg_split, png_path_dict=png_path_dict, pred_plot_path=plot_path,
+                            pred_skip_exist=True, gt_skip_exist=gt_skip_exist,
+                            all_task_num=all_task_num, subset_task_num=subset_task_num)
     random.shuffle(fnames)
     for fname in fnames:
         if not fname.endswith('.png'):

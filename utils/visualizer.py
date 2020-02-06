@@ -51,12 +51,17 @@ class Visualizer:
             self.gt_plot_path = gt_plot_path_gray
         else:
             self.gt_plot_path = gt_plot_path_color
-        self.pred_bin_path = os.path.join(pred_plot_path, 'pred_bin')
-        self.pred_score_path = os.path.join(pred_plot_path, 'pred_score')
-        self.pred_box_path = os.path.join(pred_plot_path, 'pred_box')
 
         if not os.path.exists(self.gt_plot_path):
             os.makedirs(self.gt_plot_path)
+
+        self.pred_bin_path = None
+        self.pred_score_path = None
+        self.pred_box_path = None
+        if pred_plot_path is not None:
+            self.pred_bin_path = os.path.join(pred_plot_path, 'pred_bin')
+            self.pred_score_path = os.path.join(pred_plot_path, 'pred_score')
+            self.pred_box_path = os.path.join(pred_plot_path, 'pred_box')
 
         self.tasks_plotted_cache = dict()
         self.tasks_in_subset = dict()
@@ -161,6 +166,7 @@ class Visualizer:
 
         # predictions: make plots
         if pred_bin_tags is not None:
+            assert self.pred_bin_path is not None
             for tag in pred_bin_tags:
                 pred_bin = task_pred_dict[tag]
                 if len(pred_bin.shape) == 1:
@@ -180,6 +186,7 @@ class Visualizer:
                 task_cache_dict['figs'].append((tag, fig_path))
 
         if pred_box_tags is not None:
+            assert self.pred_box_path is not None
             for tag in pred_box_tags:
                 pred_boxlist = task_pred_dict[tag]
                 pred_boxes = None
@@ -202,6 +209,7 @@ class Visualizer:
                 task_cache_dict['figs'].append((tag, fig_path))
 
         if pred_score_tags is not None:
+            assert self.pred_score_path is not None
             task_cache_dict['figs2'] = list()
             for tag in pred_score_tags:
                 pred_score = task_pred_dict[tag]
@@ -234,12 +242,14 @@ class Visualizer:
         c_a_r = ' | '.join(p_structure['attributes']) + ' || ' + p_structure['name'] + ' || ' \
                 + ' | '.join(['%s (%s)' % (pn[0], pn[1]) for pn in p_structure['relation_descriptions']])
         task_header = '<h3>[%s]: %s (%s)</h3>\n' % (task_id, phrase, c_a_r)
-        iou_box = task_pred_dict.get('iou_box', -1)
-        iou_mask = task_pred_dict.get('iou_mask', -1)
+        iou_box, iou_mask = -1, -1
+        if task_pred_dict is not None:
+            iou_box = task_pred_dict.get('iou_box', -1)
+            iou_mask = task_pred_dict.get('iou_mask', -1)
         if iou_mask > 0 or iou_box > 0:
             task_header += '<h3>box_iou: %.4f; mask_iou: %.4f</h3>\n' % (iou_box, iou_mask)
         task_header += '<h3>Subsets: %s </h3>\n' % ', '.join(task_subsets)
-        if 'info' in task_pred_dict:
+        if task_pred_dict is not None and 'info' in task_pred_dict:
             task_header += '<h3>Info: %s </h3>\n' % task_pred_dict['info']
         return task_header
 
