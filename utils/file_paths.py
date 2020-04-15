@@ -17,8 +17,7 @@ dataset_dir = api_path.joinpath('data/VGPhraseCut_v0')
 
 img_fpath = dataset_dir.joinpath('images')
 name_att_rel_count_fpath = dataset_dir.joinpath('name_att_rel_count.json')
-img_info_fpath = 'data/refvg/image_data_split3000_100_slim.json'
-# img_info_fpath = dataset_dir.joinpath('image_data_split.json')
+img_info_fpath = dataset_dir.joinpath('image_data_split.json')
 skip_fpath = dataset_dir.joinpath('skip.json')
 
 refer_fpaths = dict()

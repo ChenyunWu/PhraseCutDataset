@@ -35,20 +35,15 @@ class RefVGLoader(object):
             self.ImgInfo = {img['image_id']: img for img in imgs_info if img['split'] in self.splits}
 
         print('RefVGLoader loading refer data')
-        if not split:
-            fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup.json'
+
+        for s in self.splits:
+            if input_anno_only:
+                fpath = refer_input_fpaths[s]
+            else:
+                fpath = refer_fpaths[s]
             print('RefVGLoader loading %s' % fpath)
             with open(fpath, 'r') as f:
                 ref_tasks += json.load(f)
-        else:
-            for s in self.splits:
-                if input_anno_only:
-                    fpath = refer_input_fpaths[s]
-                else:
-                    fpath = refer_fpaths[s]
-                print('RefVGLoader loading %s' % fpath)
-                with open(fpath, 'r') as f:
-                    ref_tasks += json.load(f)
 
         print('RefVGLoader preparing data')
         self.task_num = 0
