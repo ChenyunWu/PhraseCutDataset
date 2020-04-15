@@ -45,7 +45,7 @@ types of attributes. We have pre-define vocabulary for each type.
 
 import json
 
-from file_paths import name_att_rel_count_fpath
+from file_paths import name_att_rel_count_fpath, img_info_fpath
 
 
 subsets = ['all', 'c_coco',
@@ -56,7 +56,8 @@ subsets = ['all', 'c_coco',
            's_small', 's_mid', 's_large',
            'a20', 'a100', 'a200', 'a21-100', 'a101-200', 'a200+',
            'a_color', 'a_shape', 'a_material', 'a_texture', 'a_state', 'a_adj', 'a_noun', 'a_loc', 'a_count', 'a_bad',
-           'p_att_rel'
+           'p_att_rel',
+           'd_cocotv', 'd_notcocotv'
            ]
 
 with open(name_att_rel_count_fpath, 'r') as f:
@@ -68,8 +69,17 @@ cat_sorted = [p[0] for p in cat_count_list]
 att_sorted = [p[0] for p in att_count_list]
 rel_sorted = [p[0] for p in rel_count_list]
 
+with open(img_info_fpath, 'r') as f:
+    img_info = json.load(f)
 
-def get_subset(phrase_structure, gt_boxes, gt_relative_size):
+not_coco_trainval = set()
+for img in img_info:
+    cid = img.get('coco_id', None)
+    if not cid:
+        not_coco_trainval.add(img['image_id'])
+
+
+def get_subset(image_id, phrase_structure, gt_boxes, gt_relative_size):
     cond = dict()
     for key in subsets:
         cond[key] = False
@@ -89,6 +99,12 @@ def get_subset(phrase_structure, gt_boxes, gt_relative_size):
     #     if name in phrase:
     #         top_k = ni
     #         break
+
+    # d_cocotv: coco trainval or not
+    if image_id in not_coco_trainval:
+        cond['d_notcocotv'] = True
+    else:
+        cond['d_cocotv'] = True
 
     # c_coco
     if phrase_structure['name'] in coco:

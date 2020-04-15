@@ -39,10 +39,10 @@ class Evaluator:
                         correct_tag=None, verbose=False, mask_score_thresh=0, log_to_evaluator=True):
         if img_id not in self.refvg_loader.img_ids:
             print('WARNING: IMG %d is not in RefVG %s. Ignored.' % (img_id, self.refvg_split))
-            return
+            return None, None
         if img_id in self.evaluated_img_ids and log_to_evaluator:
             print('WARNING: IMG %d is already evaluated. Ignored.' % img_id)
-            return
+            return None, None
         if log_to_evaluator:
             self.evaluated_img_ids.add(img_id)
 

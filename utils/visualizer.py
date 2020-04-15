@@ -80,7 +80,7 @@ class Visualizer:
         self.baselines = baselines
         self.baselines_skip_exist = baselines_skip_exist
         if baselines is not None:
-            for bl_name, bl_dict in baselines:
+            for bl_name, bl_dict in baselines.items():
                 bl_dict['pred'] = np.load(bl_dict['pred_path'], allow_pickle=True, encoding='latin1').item()
                 print('Visualizer: loaded baseline predictions for %s' % bl_name)
 
@@ -137,7 +137,7 @@ class Visualizer:
 
         # baselines
         if self.baselines is not None:
-            for bl_name, bl_dict in self.baselines:
+            for bl_name, bl_dict in self.baselines.items():
                 if img_id not in bl_dict['pred']:
                     print(img_id, 'not in ', bl_name)
                 else:

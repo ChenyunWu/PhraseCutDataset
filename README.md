@@ -3,9 +3,10 @@
 <table width="100%">
   <tr>Examples from the dataset:</tr>
   <tr>
-  <td><img src="figures/gt.jpg", alt="examples" width="800"></td>
+  <td><img src="figures/gt.jp2", alt="examples" width="800"></td>
   </tr>
 </table>
+
 
 <table width="100%">
   <tr>Concepts included in the dataset:</tr>
@@ -31,10 +32,10 @@ Our dataset  roughly covers 70% of the images in Visual Genome. We split the dat
 
 | split    | all | train | val | test | miniv |
 |----------|:----|-------|------|-----|-------|
-| #images  | 77,262 | 71,354 | 2971 | 2937 | 100 |
-| #phrases | 345,486 | 306,209 | 20,316 | 18,961 | 821 |
+| #images  | 77,262 | 71,746 | 2971 | 2545 | 100 |
+| #phrases | 345,486 | 310,816 | 20,316 | 14,354 | 821 |
 
-More dataset statistics and data collection pipeline details can be found in the paper. \# TODO: link to the paper.
+More dataset statistics and data collection pipeline details can be found in the paper.
 
 ## Quick Start
 
@@ -71,8 +72,6 @@ You can also play around [dataset_demo.ipynb](dataset_demo.ipynb) to view more d
 ## Links
 
 [Webpage](https://people.cs.umass.edu/~chenyun/phrasecut/)
-
-Paper on Arxiv #TODO
 
 ## Requirements
 

@@ -2,9 +2,9 @@ import os
 import numpy as np
 import random
 
+from visualize_utils import save_pred_to_png
 from refvg_loader import RefVGLoader
 from data_transfer import boxes_to_mask, polygons_to_mask, xyxy_to_xywh
-from visualize_utils import save_pred_to_png
 
 
 def box_rand_pred(img_data, task_i):

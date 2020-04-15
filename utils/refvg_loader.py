@@ -35,14 +35,20 @@ class RefVGLoader(object):
             self.ImgInfo = {img['image_id']: img for img in imgs_info if img['split'] in self.splits}
 
         print('RefVGLoader loading refer data')
-        for s in self.splits:
-            if input_anno_only:
-                fpath = refer_input_fpaths[s]
-            else:
-                fpath = refer_fpaths[s]
+        if not split:
+            fpath = 'data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup.json'
             print('RefVGLoader loading %s' % fpath)
             with open(fpath, 'r') as f:
                 ref_tasks += json.load(f)
+        else:
+            for s in self.splits:
+                if input_anno_only:
+                    fpath = refer_input_fpaths[s]
+                else:
+                    fpath = refer_fpaths[s]
+                print('RefVGLoader loading %s' % fpath)
+                with open(fpath, 'r') as f:
+                    ref_tasks += json.load(f)
 
         print('RefVGLoader preparing data')
         self.task_num = 0
@@ -66,6 +72,7 @@ class RefVGLoader(object):
         self.shuffle()
         self.iterator = 0
         self.input_anno_only = input_anno_only
+        print('split %s: %d imgs, %d tasks' % ('_'.join(self.splits), len(self.img_ids), self.task_num))
         print('RefVGLoader ready.')
 
     def shuffle(self):
@@ -88,7 +95,7 @@ class RefVGLoader(object):
         mps = polygons_to_mask(polygons, img_info['width'], img_info['height'])
         b = np.sum(mps > 0, axis=None)
         gt_relative_size = b * 1.0 / (img_info['width'] * img_info['height'])
-        cond = get_subset(task['phrase_structure'], task['instance_boxes'], gt_relative_size)
+        cond = get_subset(task['image_id'], task['phrase_structure'], task['instance_boxes'], gt_relative_size)
         task['subsets'] = [k for k, v in cond.items() if v]
         return task['subsets']
 

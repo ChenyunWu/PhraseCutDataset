@@ -114,7 +114,8 @@ def concat_phrase_lists(phrase_lists):
     Concatenate PhraseLists to one.
     :param phrase_lists: list of additional PhraseList
     """
-    cat_pl = PhraseList(phrase_handler=phrase_lists[0].vg_loader, max_phrase_len=phrase_lists[0].max_phrase_len)
+    phrase_handler = phrase_lists[0].phrase_handler
+    cat_pl = PhraseList(phrase_handler=phrase_handler, max_phrase_len=phrase_handler.phrase_length)
     for field in ['phrases', 'phrase_structures', 'phrase_word_labels', 'phrase_anno_labels',
                   'cat_labels', 'att_labels', 'rel_pred_labels', 'rel_obj_labels',
                   'cat_word_labels', 'att_word_labels', 'rel_pred_word_labels', 'rel_obj_word_labels']:

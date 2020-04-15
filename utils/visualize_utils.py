@@ -178,10 +178,13 @@ def plot_refvg(ax=None, fig=None, fig_size=None, img=None, img_id=-1, img_url=No
     return fig
 
 
-def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
+def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True, gray_img=True):
     img_id = img_data['image_id']
     fig_h = img_data['height'] / 300.0
     fig_w = img_data['width'] / 300.0
+    fig_dir = os.path.dirname(fig_path)
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir)
     if os.path.exists(fig_path) and skip_exist:
         return False
     task_i = img_data['task_ids'].index(task_id)
@@ -189,7 +192,7 @@ def gt_visualize_to_file(img_data, task_id, fig_path, skip_exist=True):
     gt_boxes = img_data['gt_boxes'][task_i]
     try:
         fig = plot_refvg(fig_size=[fig_w, fig_h], img_id=img_id, gt_Polygons=gt_Polygons, gt_boxes=gt_boxes,
-                         gray_img=True)
+                         gray_img=gray_img)
         fig.savefig(fig_path, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close(fig)
     except Exception as e:

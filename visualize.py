@@ -52,12 +52,15 @@ def visualize_from_png_path(refvg_split, png_path, out_path=None, all_task_num=-
     return
 
 
-def visualize_from_pred_dict(pred_eval_dict_path=None, refvg_split=None, out_path=None,
+def visualize_from_pred_dict(pred_eval_dict=None, pred_eval_dict_path=None, refvg_split=None, out_path=None,
                              pred_bin_tags=None, pred_score_tags=None, pred_box_tags=None,
                              all_task_num=40, subset_task_num=20, gt_skip_exist=True, pred_skip_exist=True,
                              verbose=True):
-    predictions = np.load(pred_eval_dict_path, allow_pickle=True).item()
-    assert isinstance(predictions, dict)
+    if pred_eval_dict is None:
+        predictions = np.load(pred_eval_dict_path, allow_pickle=True).item()
+        assert isinstance(predictions, dict)
+    else:
+        predictions = pred_eval_dict
 
     # sample
     if subset_task_num > 0:

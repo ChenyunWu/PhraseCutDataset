@@ -10,7 +10,7 @@ from utils.visualize_utils import png_to_pred_mask
 
 def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp_name_in_summary=None,
                               save_result_to_path=None, verbose=False):
-
+    print(exp_name_in_summary)
     evaluator = Evaluator(refvg_split=refvg_split, analyze_subset=analyze_subset)
     fnames = os.listdir(pred_folder)
     fnames.sort()
@@ -29,15 +29,15 @@ def evaluate_from_pred_folder(pred_folder, refvg_split, analyze_subset=True, exp
         else:
             if len(img_preds) > 0:
                 # print(img_preds)
-                im, _ = evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds,
-                                                  pred_mask_tag='pred_mask', verbose=verbose)
+                evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds, pred_mask_tag='pred_mask',
+                                          verbose=verbose)
             cur_img_id = img_id
             img_preds = dict()
             img_preds[task_id] = {'pred_mask': pred_mask}
 
     if len(img_preds) > 0:
-        im, _ = evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds,
-                                          pred_mask_tag='pred_mask', verbose=verbose)
+        evaluator.eval_single_img(img_id=int(cur_img_id), im_pred_dict=img_preds, pred_mask_tag='pred_mask',
+                                  verbose=verbose)
 
     evaluator.analyze_stats(mask_box=['mask'], exp_name_in_summary=exp_name_in_summary,
                             save_result_to_path=save_result_to_path)
