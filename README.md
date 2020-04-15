@@ -3,7 +3,7 @@
 <table width="100%">
   <tr>Examples from the dataset:</tr>
   <tr>
-  <td><img src="figures/gt.jp2", alt="examples" width="800"></td>
+  <td><img src="figures/gt.jpg", alt="examples" width="800"></td>
   </tr>
 </table>
 
