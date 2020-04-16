@@ -24,7 +24,7 @@
 
 ## Introduction
 
-VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase. 
+VGPhraseCut Dataset is aimed at the problem of segmenting anything on an image based on a regional description phrase. 
 
 The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 345,486 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
