@@ -303,9 +303,9 @@ def no_coco_in_test():
     new_info = [img for img in info if img['image_id'] not in to_remove]
     print(len(info), len(new_info))
 
-    with open('data/refvg/image_data_split3000_100_slim_nococo.json', 'w') as f:
-        json.dump(new_info, f)
-    print('data/refvg/image_data_split3000_100_slim_nococo.json saved.')
+    # with open('data/refvg/image_data_split3000_100_slim_nococo.json', 'w') as f:
+    #     json.dump(new_info, f)
+    # print('data/refvg/image_data_split3000_100_slim_nococo.json saved.')
 
     with open('data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_input_test.json') as f:
         ref = json.load(f)
@@ -342,6 +342,7 @@ def coco_in_test_to_train():
 
     with open('data/refvg/image_data_split3000_100_slim_nococo.json', 'w') as f:
         json.dump(info, f)
+    print(len(info))
     print('data/refvg/image_data_split3000_100_slim_nococo.json saved.')
 
     with open('data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_input_test.json') as f:
@@ -365,7 +366,7 @@ def coco_in_test_to_train():
     ref += new_ref
     print(len(ref))
     with open('data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_train_nococo.json', 'w') as f:
-        json.dump(new_ref, f)
+        json.dump(ref, f)
     print('data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_train_nococo.json saved.')
 
 
@@ -381,6 +382,6 @@ if __name__ == '__main__':
     # input_only()
     # split_ref(ref_pre='data/refvg/amt_result/refer_filtered_instance_refine_slim_nodup_input')
 
-    # no_coco_in_test()
-    # coco_in_test_to_train()
-    split_scene_graph()
+    no_coco_in_test()
+    coco_in_test_to_train()
+    # split_scene_graph()

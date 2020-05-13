@@ -194,7 +194,7 @@ All VGPhraseCut annotation files are shared through this [Google Drive link](htt
 
 ###  Metadata:
 
-- `image_data_split3000.json`(15.8MB): 
+- `image_data_split3000.json`(15.9MB): 
   List of image information from Visual Genome.
   For each image, there is a 'dict' containing its 'image_id', 'coco_id', 'flickr_id', 'width', 'height', 'url', and also its split in our VGPhraseCut dataset: 'split'=train/val/test/miniv.  
 - `name_att_rel_count.json`(348KB):
@@ -202,9 +202,9 @@ All VGPhraseCut annotation files are shared through this [Google Drive link](htt
 
 ###  Referring data:
 
-- `refer_train.json`(328.4MB) / `refer_input_val.json`(52.9MB)
+- `refer_train.json`(344.1MB) / `refer_input_val.json`(53.7MB)
 - `refer_val.json`(44.1MB) / `refer_input_val.json`(3.3MB)
-- `refer_test.json`(46.1MB) / `refer_input_test.json`(3.2MB) 
+- `refer_test.json`(30.4MB) / `refer_input_test.json`(2.4MB) 
 - `refer_miniv.json`(2.2MB)/ `refer_input_miniv.json`(140KB)
 
 They are separate files for the different splits. 
@@ -235,9 +235,9 @@ Each file contains a list of tasks. Each task stands for a phrase-region pair, o
 
 ###  (Optional) Visual Genome scene graph data:
 
-- `scene_graphs_train.json`(486.9MB)
+- `scene_graphs_train.json`(489.7MB)
 - `scene_graphs_val.json`(18.6MB)
-- `scene_graphs_test.json`(19.2MB)
+- `scene_graphs_test.json`(16.4MB)
 - `scene_graphs_miniv.json`(727KB)
 
 Only needed if you want to use associated Visual Genome scene graph annotations together with our dataset.
