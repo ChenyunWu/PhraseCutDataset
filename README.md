@@ -24,7 +24,7 @@
 
 ## Introduction
 
-VGPhraseCut Dataset is aimed for the problem of segmenting anything on an image based on a regional description phrase. 
+VGPhraseCut Dataset is aimed at the problem of segmenting anything on an image based on a regional description phrase. 
 
 The dataset is collected based on [Visual Genome](https://visualgenome.org/). It contains 345,486 phrase-region pairs. Each phrase contains explicit annotations of which words describe the category name, attributes, and relationships with other things in the image respectively. The corresponding region described by the phrase is a binary segmentation mask on the image.
 
@@ -50,7 +50,7 @@ conda activate phrasecut_env
 pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown==3.9.0
 
 # clone our repo
-git clone git@github.com:ChenyunWu/PhraseCutDataset.git
+git clone https://github.com/ChenyunWu/PhraseCutDataset.git
 cd PhraseCutDataset
 
 # download the miniv split
@@ -100,9 +100,9 @@ pip install matplotlib==3.1.1 numpy==1.17.4 pillow==6.1.0 requests==2.22.0 gdown
 We suggest you clone this repository to folder `PhraseCutDataset`: 
 
 ```
-git clone git@github.com:ChenyunWu/PhraseCutDataset.git
+git clone https://github.com/ChenyunWu/PhraseCutDataset.git
 ```
-And download all the dataset files into `PhraseCutDataset/data/VGPhraseCut_v0/`.
+And download all the dataset files into `PhraseCutDataset/data/VGPhraseCut_v0/` (as default).
 
 If you prefer to put the dataset elsewhere, simply change the 'dataset_dir' in [utils/file_paths.py](utils/file_paths.py) 
 
