@@ -14,21 +14,22 @@ def download(url, fpath):
 
 def download_annotations(splits, download_refer=True, download_sg=False, download_skip=False):
     urls = {
-        'name_att_rel_count': 'https://drive.google.com/uc?id=1QbunEpB0l6PXCTVR5L7YsJM7-eNoKjHM',
-        'img_info': 'https://drive.google.com/uc?id=1UmjLJx9BGE9ruOXK1T4iGCYKurY0jNOL',
-        'refer_miniv': 'https://drive.google.com/uc?id=1HL9YX8rmMTAxAblkBAVv2PO4aNHfFVDe',
-        'refer_test': 'https://drive.google.com/uc?id=1o1waJid-D5EvyIoDUyqUbTYofcIPcLZt',
-        'refer_train': 'https://drive.google.com/uc?id=1VCFRajJ4YXPmW5SJg6lS0uKaVAysO61F',
-        'refer_val': 'https://drive.google.com/uc?id=1Q2HFlss5Y2zLjTydQMWzq6u0iFsGPNnd',
-        'refer_input_miniv': 'https://drive.google.com/uc?id=1aFjegXv6VFgbDdcKwB7S4whSoagfN3pr',
-        'refer_input_test': 'https://drive.google.com/uc?id=1oKPI3pAGL36iELIbZ8xBCRdv8XFjNGyY',
-        'refer_input_train': 'https://drive.google.com/uc?id=1b59w_IcfpvNfBhraSKw5RfmFHFJ4lIAb',
-        'refer_input_val': 'https://drive.google.com/uc?id=1-t1Qha7Bu9DKwFxUL9Tt6A6nw6ANtImI',
-        'scene_graphs_train': 'https://drive.google.com/uc?id=1qsLfaQ4uBUk2wn0BBbkQtofPJ2LjK08C',
-        'scene_graphs_val': 'https://drive.google.com/uc?id=1wbsUTxKHjA2dqjAeF63XQvF_LqNFQi1W',
-        'scene_graphs_test': 'https://drive.google.com/uc?id=1z2ll6QKPYHTCv4MKUKEmr7xVkgkgDaOR',
-        'scene_graphs_miniv': 'https://drive.google.com/uc?id=1p9KT6cw8gP6NkPdCy5Hp4X8_h4esBwKL',
-        'skip': 'https://drive.google.com/uc?id=1L7j_-9lGk90BuqiQR15W95VQ8frejAfe'
+        'name_att_rel_count': 'https://drive.google.com/uc?id=10lWrt2Oy7Im-QofRSNKNu9qa_DS0IcbR',
+        'img_info': 'https://drive.google.com/uc?id=1xB9eExJo35K3DQu8PnBWZ1q_OMoMl8-i',
+        'refer_miniv': 'https://drive.google.com/uc?id=1oLcTQ1blTIQyu5ZMelQN2HSniuQaxM4E',
+        'refer_test': 'https://drive.google.com/uc?id=1jrzXm1gcq6f5hNDeamZd0UmyyHUv61IZ',
+        'refer_train': 'https://drive.google.com/uc?id=1qx-0q6r9r0YUGpoyT0B8HJKmUFWQDSu7',
+        'refer_val': 'https://drive.google.com/uc?id=1UyojArOFPlsSeNbA9fHWjCjOOU-OCohG',
+        'refer_input_miniv': 'https://drive.google.com/uc?id=1QPZ35eSLRRczM4OMjlkiI88m7JGS5rsN',
+        'refer_input_test': 'https://drive.google.com/uc?id=1xfr3MKPSSPUfIf3i_LQA3JAEdbCRyMiD',
+        'refer_input_train': 'https://drive.google.com/uc?id=1udrL3DM6Ksml7jXGRY8PSPSCk5sGIsGd',
+        'refer_input_val': 'https://drive.google.com/uc?id=1DjJRoTdJGpee8k4QKfjhV97XQLjuiLk0',
+
+        'scene_graphs_train': 'https://drive.google.com/uc?id=14Gjf8YA8ryw7VZXoQkHc3eiD-3mRHuJS',
+        'scene_graphs_val': 'https://drive.google.com/uc?id=1X0bU8TuE8o_yn4lFxA3DvHSKwn_esbPu',
+        'scene_graphs_test': 'https://drive.google.com/uc?id=1KG5D_Ah88b-rC-gRt1nJ_pXgET9aUt0c',
+        'scene_graphs_miniv': 'https://drive.google.com/uc?id=1xT10sTv8S7LD9b5ZeSZvVxOVbpJkBECm',
+        'skip': 'https://drive.google.com/uc?id=1pqciUIP2OgewoRGW2AsoT2P0Bb20KCpT'
     }
 
     if not os.path.exists(dataset_dir):
